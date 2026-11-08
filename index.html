@@ -7,53 +7,45 @@
     <style>
         :root {
             --primary-bg: rgba(15, 23, 42, 0.85);
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --card-border: rgba(255, 255, 255, 0.12);
+            --card-bg: rgba(30, 41, 59, 0.75);
+            --card-border: rgba(255, 255, 255, 0.15);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --accent: #38bdf8;
             --accent-hover: #0284c7;
-            --bg-gradient: linear-gradient(135deg, #0a0f1e 0%, #071931 50%, #0d274c 100%);
-            --wave-color1: rgba(56, 189, 248, 0.15);
-            --wave-color2: rgba(2, 132, 199, 0.25);
+            --bg-gradient: linear-gradient(135deg, rgba(10, 15, 30, 0.85) 0%, rgba(7, 25, 49, 0.85) 100%);
             --sidebar-width: 260px;
         }
 
         /* ערכות נושא (Themes) */
         body.theme-purple {
-            --card-bg: rgba(45, 27, 78, 0.65);
-            --card-border: rgba(216, 180, 254, 0.2);
+            --card-bg: rgba(45, 27, 78, 0.7);
+            --card-border: rgba(216, 180, 254, 0.25);
             --text-main: #faf5ff;
             --text-muted: #c084fc;
             --accent: #c084fc;
             --accent-hover: #a855f7;
-            --bg-gradient: linear-gradient(135deg, #18092b 0%, #2a085c 50%, #4c1d95 100%);
-            --wave-color1: rgba(192, 132, 252, 0.15);
-            --wave-color2: rgba(168, 85, 247, 0.25);
+            --bg-gradient: linear-gradient(135deg, rgba(24, 9, 43, 0.85) 0%, rgba(76, 29, 149, 0.85) 100%);
         }
 
         body.theme-dark {
-            --card-bg: rgba(24, 24, 27, 0.75);
-            --card-border: rgba(255, 255, 255, 0.1);
+            --card-bg: rgba(24, 24, 27, 0.8);
+            --card-border: rgba(255, 255, 255, 0.12);
             --text-main: #f4f4f5;
             --text-muted: #a1a1aa;
             --accent: #a1a1aa;
             --accent-hover: #71717a;
-            --bg-gradient: linear-gradient(135deg, #09090b 0%, #18181b 50%, #27272a 100%);
-            --wave-color1: rgba(255, 255, 255, 0.05);
-            --wave-color2: rgba(255, 255, 255, 0.1);
+            --bg-gradient: linear-gradient(135deg, rgba(9, 9, 11, 0.9) 0%, rgba(39, 39, 42, 0.9) 100%);
         }
 
         body.theme-light {
             --card-bg: rgba(255, 255, 255, 0.85);
-            --card-border: rgba(0, 0, 0, 0.1);
+            --card-border: rgba(0, 0, 0, 0.12);
             --text-main: #0f172a;
             --text-muted: #64748b;
             --accent: #0284c7;
             --accent-hover: #0369a1;
-            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #f0f9ff 100%);
-            --wave-color1: rgba(2, 132, 199, 0.15);
-            --wave-color2: rgba(56, 189, 248, 0.25);
+            --bg-gradient: linear-gradient(135deg, rgba(224, 242, 254, 0.85) 0%, rgba(240, 249, 255, 0.85) 100%);
         }
 
         * {
@@ -63,7 +55,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* גלילה מותאמת אישית מודרנית */
+        /* גלילה מותאמת אישית */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -94,48 +86,35 @@
             transition: background 0.5s ease;
         }
 
-        /* רקע גלים דינמי בדימוי ים וצורות נעות */
-        .ocean-waves {
-            position: absolute;
-            bottom: 0;
+        /* רקע וידאו חי */
+        .video-bg-container {
+            position: fixed;
+            top: 0;
             left: 0;
-            width: 100%;
-            height: 180px;
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
-            z-index: 1;
+            z-index: 0;
             pointer-events: none;
         }
 
-        .wave {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 200%;
+        .bg-video {
+            width: 100%;
             height: 100%;
-            background: repeat-x;
-            transform: translate3d(0, 0, 0);
+            object-fit: cover;
+            transition: opacity 0.8s ease-in-out;
+            opacity: 0.45;
         }
 
-        .wave1 {
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M0,0 C150,90 350,-40 500,40 C650,120 900,20 1200,60 L1200,120 L0,120 Z" fill="%2338bdf8" opacity="0.25"></path></svg>');
-            animation: waveAnim 14s linear infinite;
-        }
-
-        .wave2 {
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M0,0 C200,40 400,100 600,20 C800,-40 1000,80 1200,30 L1200,120 L0,120 Z" fill="%230284c7" opacity="0.2"></path></svg>');
-            animation: waveAnim 9s linear infinite reverse;
-        }
-
-        @keyframes waveAnim {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
+        body.theme-light .bg-video {
+            opacity: 0.25;
         }
 
         /* סרגל צד מתרחב (Sidebar) */
         .sidebar {
             width: var(--sidebar-width);
             background: var(--card-bg);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(25px);
             border-left: 1px solid var(--card-border);
             display: flex;
             flex-direction: column;
@@ -169,7 +148,7 @@
             margin: 1rem 0;
             border-radius: 0.75rem;
             border: 1px dashed var(--accent);
-            background: rgba(56, 189, 248, 0.1);
+            background: rgba(56, 189, 248, 0.15);
             color: var(--accent);
             font-weight: bold;
             cursor: pointer;
@@ -181,7 +160,7 @@
         }
 
         .new-chat-btn:hover {
-            background: rgba(56, 189, 248, 0.25);
+            background: rgba(56, 189, 248, 0.3);
             transform: translateY(-2px);
         }
 
@@ -217,7 +196,7 @@
         }
 
         .history-item:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
             color: var(--accent);
             border-color: var(--card-border);
             transform: translateX(-3px);
@@ -323,8 +302,8 @@
             justify-content: space-between;
             align-items: center;
             padding: 1rem 1.5rem;
-            background: rgba(15, 23, 42, 0.3);
-            backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(15px);
             border-bottom: 1px solid var(--card-border);
         }
 
@@ -346,7 +325,7 @@
         }
 
         .sidebar-toggle-btn:hover {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.15);
         }
 
         .logo {
@@ -394,7 +373,7 @@
 
         .logout-btn:hover {
             color: white;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
         }
 
         /* תוכן מרכזי */
@@ -438,7 +417,7 @@
             border: 1px solid var(--card-border);
             border-radius: 1.75rem;
             padding: 1.2rem 1.5rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
             margin-bottom: 1.2rem;
         }
 
@@ -513,7 +492,7 @@
         }
 
         .chip:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.2);
             border-color: var(--accent);
             transform: translateY(-2px);
         }
@@ -540,7 +519,6 @@
             width: 100%;
         }
 
-        /* אנימציות הודעה */
         .msg {
             max-width: 80%;
             padding: 1rem 1.25rem;
@@ -548,7 +526,7 @@
             line-height: 1.6;
             font-size: 0.95rem;
             word-wrap: break-word;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             animation: messagePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
@@ -622,10 +600,11 @@
 </head>
 <body>
 
-    <!-- אפקט גלים חיים ברקע -->
-    <div class="ocean-waves">
-        <div class="wave wave1"></div>
-        <div class="wave wave2"></div>
+    <!-- רקע וידאו דינמי מושתק בלולאה -->
+    <div class="video-bg-container">
+        <video id="bg-video" class="bg-video" autoplay loop muted playsinline>
+            <source id="bg-video-src" src="https://assets.mixkit.co/videos/preview/mixkit-abstract-fast-line-motion-animation-43187-large.mp4" type="video/mp4">
+        </video>
     </div>
 
     <!-- סרגל צד מתרחב (Sidebar) -->
@@ -672,10 +651,10 @@
             <div class="user-menu">
                 <!-- בורר ערכות נושא (Themes) -->
                 <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
-                    <option value="ocean">🌊 אוקיינוס</option>
-                    <option value="purple">🟣 סגול ניאון</option>
-                    <option value="dark">⬛ כהה עתידני</option>
-                    <option value="light">☀️ יום בהיר</option>
+                    <option value="ocean">🌊 אוקיינוס (Ocean Video)</option>
+                    <option value="purple">🟣 סגול ניאון (Purple Video)</option>
+                    <option value="dark">⬛ כהה עתידני (Dark Video)</option>
+                    <option value="light">☀️ יום בהיר (Light Video)</option>
                 </select>
                 <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)">
                     <option value="he">עברית 🇮🇱</option>
@@ -728,13 +707,20 @@
         const API_KEY = "bgs_live_1ee39ea97e4f175c2c6b4ac63490220f377d43775a56ac30";
         const API_BASE_URL = "https://birgsol-gh.davidyosef2102014.workers.dev/v1";
 
+        // כאן אתה יכול להדביק איזה קישורי וידאו (URL של MP4) שאתה רוצה לכל ערכת נושא!
+        const themeVideos = {
+            ocean: "https://www.pexels.com/download/video/32132547/",
+            purple: "https://www.pexels.com/download/video/10754257/",
+            dark: "https://www.pexels.com/download/video/28561594/",
+            light: "https://www.pexels.com/download/video/29470941/"
+        };
+
         let isSignUp = false;
         let currentUser = null;
         let activeChatHistory = [];
         let currentChatId = null;
         let currentLang = 'he';
 
-        // מילון תרגומים ושפה
         const translations = {
             he: {
                 greeting: "אחר צהריים טובים",
@@ -789,7 +775,7 @@
         };
 
         const creatorResponsesHe = [
-            "אורי ורדיגר המלךךךך",
+            "אורי ורדיגר המלך",
             "אורי ורדיגר האגדי!",
             "אורי ורדיגר התותח",
             "אורי ורדיגר המאסטר הגדול",
@@ -866,6 +852,15 @@
             if (themeName !== 'ocean') {
                 document.body.classList.add(`theme-${themeName}`);
             }
+            
+            // עדכון סרטון הרקע בהתאם לנושא
+            const videoElem = document.getElementById('bg-video');
+            if (videoElem && themeVideos[themeName]) {
+                videoElem.src = themeVideos[themeName];
+                videoElem.load();
+                videoElem.play().catch(e => console.log("Autoplay check:", e));
+            }
+
             localStorage.setItem('copilot_theme', themeName);
         }
 
