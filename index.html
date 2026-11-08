@@ -3,194 +3,627 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MatrixAI Chat</title>
+    <title>Copilot Style AI</title>
     <style>
         :root {
-            --bg-color: #0b132b;
-            --chat-bg: #1c2541;
-            --header-bg: #0b132b;
-            --text-color: #ffffff;
-            --user-bubble: #3a86ff;
-            --ai-bubble: #27344e;
-            --input-bg: #1c2541;
-            --border-color: #303b58;
+            --primary-bg: rgba(15, 23, 42, 0.75);
+            --card-bg: rgba(30, 41, 59, 0.65);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-hover: #0284c7;
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(rgba(10, 15, 30, 0.6), rgba(10, 15, 30, 0.8)), 
+                        url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2073&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-main);
             height: 100vh;
-        }
-        header {
-            background-color: var(--header-bg);
-            padding: 1rem;
-            text-align: center;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 1.25rem;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-        #chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            max-width: 900px;
-            width: 100%;
-            margin: 0 auto;
-            box-sizing: border-box;
+            overflow: hidden;
         }
-        .message-wrapper {
+
+        /* מסכי התחברות והרשמה */
+        .auth-container {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
             display: flex;
-            gap: 0.75rem;
-            max-width: 80%;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .user-wrapper {
-            align-self: flex-start;
-            flex-direction: row-reverse;
-        }
-        .ai-wrapper {
-            align-self: flex-end;
-        }
-        .avatar {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
-            flex-shrink: 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            align-items: center;
+            z-index: 1000;
         }
-        .user-avatar {
-            background-color: #4361ee;
-        }
-        .ai-avatar {
-            background-color: #7209b7;
-        }
-        .message {
-            padding: 0.85rem 1.1rem;
-            border-radius: 1rem;
-            line-height: 1.6;
-            word-wrap: break-word;
-            font-size: 0.95rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .user-message {
-            background-color: var(--user-bubble);
-            color: white;
-            border-top-left-radius: 0.2rem;
-        }
-        .ai-message {
-            background-color: var(--ai-bubble);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-top-right-radius: 0.2rem;
-        }
-        #input-container {
-            background-color: var(--header-bg);
-            padding: 1rem 1.5rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 0.75rem;
-            max-width: 900px;
+
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
             width: 100%;
-            margin: 0 auto;
-            box-sizing: border-box;
+            max-width: 400px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
         }
-        input[type="text"] {
-            flex: 1;
+
+        .auth-card h2 {
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+        .auth-card p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .auth-input {
+            width: 100%;
             padding: 0.85rem 1rem;
+            margin-bottom: 1rem;
             border-radius: 0.75rem;
-            border: 1px solid var(--border-color);
-            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            background: rgba(15, 23, 42, 0.6);
             color: white;
             font-size: 1rem;
             outline: none;
-            transition: border-color 0.2s;
         }
-        input[type="text"]:focus {
-            border-color: #3a86ff;
+
+        .auth-input:focus {
+            border-color: var(--accent);
         }
-        button {
-            background-color: #3a86ff;
-            color: white;
-            border: none;
-            padding: 0 1.5rem;
+
+        .auth-btn {
+            width: 100%;
+            padding: 0.85rem;
             border-radius: 0.75rem;
-            cursor: pointer;
+            border: none;
+            background: var(--accent);
+            color: #0f172a;
             font-weight: bold;
             font-size: 1rem;
-            transition: background 0.2s;
+            cursor: pointer;
+            transition: 0.2s;
         }
-        button:hover {
-            background-color: #2667cc;
+
+        .auth-btn:hover {
+            background: #7dd3fc;
         }
+
+        .auth-toggle {
+            margin-top: 1.2rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .auth-toggle span {
+            color: var(--accent);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* סרגל עליון */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 2rem;
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(8px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            border: 1px solid var(--card-border);
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .logout-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* תוכן מרכזי בסגנון Copilot */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+            overflow-y: auto;
+        }
+
+        .greeting {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .greeting h1 {
+            font-size: 2.5rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .greeting h2 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        /* תיבת קלט ראשי מעוגלת */
+        .search-box-container {
+            width: 100%;
+            max-width: 720px;
+            background: rgba(23, 32, 54, 0.75);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 1.75rem;
+            padding: 1.2rem 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 1.2rem;
+        }
+
+        .search-box-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+            margin-bottom: 1rem;
+        }
+
+        .search-box-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-box-tools {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .quick-response-badge {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            padding: 0.3rem 0.7rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .search-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: white;
+        }
+
+        /* כפתורי הצעות מהירות */
+        .suggestions-row {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+
+        .chip {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+            padding: 0.5rem 1rem;
+            border-radius: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .chip:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* כרטיסיות תחתונות */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.2rem;
+            width: 100%;
+        }
+
+        .copilot-card {
+            background: rgba(23, 32, 54, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 1.25rem;
+            padding: 1.2rem;
+            height: 170px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            margin-top: 0.8rem;
+            overflow-y: auto;
+        }
+
+        .card-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.88rem;
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 0.3rem 0;
+        }
+
+        .card-item:hover {
+            color: var(--accent);
+        }
+
+        .item-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* מסך שיחה פעילה */
+        .chat-active-view {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 0.9rem 1.2rem;
+            border-radius: 1.25rem;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .user-msg {
+            align-self: flex-start;
+            background: var(--accent);
+            color: #0f172a;
+            border-top-right-radius: 0.2rem;
+            font-weight: 500;
+        }
+
+        .ai-msg {
+            align-self: flex-end;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: white;
+            border-top-left-radius: 0.2rem;
+        }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <header>🤖 MatrixAI Chat Room</header>
-
-    <div id="chat-container">
-        <div class="message-wrapper ai-wrapper">
-            <div class="avatar ai-avatar">🤖</div>
-            <div class="message ai-message">אהלן! אני המודל שלך מבית BIRGSOL. איך אפשר לעזור לך היום?</div>
+    <!-- מסך התחברות / הרשמה -->
+    <div id="auth-modal" class="auth-container">
+        <div class="auth-card">
+            <h2 id="auth-title">התחברות ל-Copilot</h2>
+            <p id="auth-desc">הכנס פרטים כדי להמשיך לשיחות שלך</p>
+            
+            <input type="text" id="auth-username" class="auth-input" placeholder="שם משתמש">
+            <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה">
+            
+            <button class="auth-btn" onclick="handleAuth()" id="auth-submit-btn">התחבר</button>
+            
+            <div class="auth-toggle">
+                <span id="auth-toggle-text" onclick="toggleAuthMode()">אין לך חשבון? הרשם בחינם</span>
+            </div>
         </div>
     </div>
 
-    <div id="input-container">
-        <input type="text" id="user-input" placeholder="הקלד הודעה..." onkeydown="if(event.key === 'Enter') sendMessage()">
-        <button onclick="sendMessage()">שלח</button>
-    </div>
+    <!-- סרגל עליון -->
+    <header>
+        <div class="logo">
+            <span style="font-size:1.4rem">🌊</span> Copilot
+        </div>
+        <div class="user-menu">
+            <span class="user-badge" id="display-username">אורח</span>
+            <button class="logout-btn" onclick="logout()">התנתק</button>
+        </div>
+    </header>
+
+    <!-- תוכן ראשי בסגנון Copilot -->
+    <main id="home-view">
+        <div class="greeting">
+            <h1 id="greeting-title">Good afternoon</h1>
+            <h2 id="greeting-name">What can I help you with today?</h2>
+        </div>
+
+        <!-- תיבת קלט ראשית -->
+        <div class="search-box-container">
+            <input type="text" id="home-input" class="search-box-input" placeholder="Ask anything..." onkeydown="if(event.key === 'Enter') startChatFromHome()">
+            <div class="search-box-tools">
+                <span class="quick-response-badge">Quick response ∨</span>
+                <div class="search-actions">
+                    <button class="icon-btn" onclick="startChatFromHome()">➔</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- הצעות מהירות -->
+        <div class="suggestions-row">
+            <div class="chip" onclick="quickAsk('Write a first draft')">Write a first draft</div>
+            <div class="chip" onclick="quickAsk('Get advice')">Get advice</div>
+            <div class="chip" onclick="quickAsk('Learn something new')">Learn something new</div>
+            <div class="chip" onclick="quickAsk('Create an image')">Create an image</div>
+            <div class="chip" onclick="quickAsk('Make a plan')">Make a plan</div>
+        </div>
+
+        <!-- כרטיסיות מידע והיסטוריה -->
+        <div class="cards-grid">
+            <div class="copilot-card">
+                <div class="card-header">
+                    <span>📄 Jump back in to your files</span>
+                    <span>ⓘ</span>
+                </div>
+                <div class="card-list">
+                    <div class="card-item">
+                        <span>campaign_53.pdf</span>
+                        <span class="item-time">Just now</span>
+                    </div>
+                    <div class="card-item">
+                        <span>Livro_de_procedimentos.pdf</span>
+                        <span class="item-time">Tuesday</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="copilot-card">
+                <div class="card-header">
+                    <span>⚡ Get guided help with your apps</span>
+                    <span>ⓘ</span>
+                </div>
+                <div class="card-list" style="flex-direction: row; gap: 1rem; align-items: center; justify-content: center; height: 100%;">
+                    <span style="font-size: 1.5rem">🔥</span>
+                    <span style="font-size: 1.5rem">🌐</span>
+                    <span style="font-size: 1.5rem">🤖</span>
+                    <span style="font-size: 1.5rem">📁</span>
+                </div>
+            </div>
+
+            <div class="copilot-card">
+                <div class="card-header">
+                    <span>💬 Keep talking to Copilot</span>
+                    <span>ⓘ</span>
+                </div>
+                <div class="card-list" id="saved-chats-list">
+                    <!-- יתמלא דינמית מהשיחות השמורות -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- מסך שיחה פעילה -->
+    <main id="chat-view" class="chat-active-view hidden">
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="search-box-container" style="margin-bottom: 0;">
+            <input type="text" id="chat-input" class="search-box-input" placeholder="Type a message..." onkeydown="if(event.key === 'Enter') sendChatMessage()">
+            <div class="search-box-tools">
+                <button class="quick-response-badge" onclick="showHome()">← חזרה לדף הבית</button>
+                <button class="icon-btn" onclick="sendChatMessage()">➔</button>
+            </div>
+        </div>
+    </main>
 
     <script>
         const API_KEY = "bgs_live_1ee39ea97e4f175c2c6b4ac63490220f377d43775a56ac30";
         const API_BASE_URL = "https://birgsol-gh.davidyosef2102014.workers.dev/v1";
 
-        async function sendMessage() {
-            const inputField = document.getElementById('user-input');
-            const chatContainer = document.getElementById('chat-container');
-            const userText = inputField.value.trim();
+        let isSignUp = false;
+        let currentUser = null;
+        let activeChatHistory = [];
 
-            if (!userText) return;
+        // בדיקת משתמש מחובר בטעינה
+        window.onload = function() {
+            const savedUser = localStorage.getItem('copilot_current_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                setupUserSession();
+            }
+        };
 
-            // הוספת הודעת משתמש בעיצוב צ'אט
-            const userWrapper = document.createElement('div');
-            userWrapper.className = 'message-wrapper user-wrapper';
-            userWrapper.innerHTML = `
-                <div class="avatar user-avatar">👤</div>
-                <div class="message user-message"></div>
-            `;
-            userWrapper.querySelector('.message').textContent = userText;
-            chatContainer.appendChild(userWrapper);
+        function toggleAuthMode() {
+            isSignUp = !isSignUp;
+            document.getElementById('auth-title').textContent = isSignUp ? "הרשמה ל-Copilot" : "התחברות ל-Copilot";
+            document.getElementById('auth-desc').textContent = isSignUp ? "צור חשבון בחינם בשני צעדים" : "הכנס פרטים כדי להמשיך לשיחות שלך";
+            document.getElementById('auth-submit-btn').textContent = isSignUp ? "ירשם עכשיו" : "התחבר";
+            document.getElementById('auth-toggle-text').textContent = isSignUp ? "כבר יש לך חשבון? התחבר" : "אין לך חשבון? הרשם בחינם";
+        }
 
-            inputField.value = '';
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+        function handleAuth() {
+            const username = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
 
-            // הוספת הודעת טעינה של ה-AI
-            const aiWrapper = document.createElement('div');
-            aiWrapper.className = 'message-wrapper ai-wrapper';
-            aiWrapper.innerHTML = `
-                <div class="avatar ai-avatar">🤖</div>
-                <div class="message ai-message">חושב...</div>
-            `;
-            chatContainer.appendChild(aiWrapper);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            if (!username || !password) {
+                alert("אנא מלא את כל השדות");
+                return;
+            }
 
-            const aiMessageDiv = aiWrapper.querySelector('.message');
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+
+            if (isSignUp) {
+                if (users[username]) {
+                    alert("שם המשתמש כבר קיים!");
+                    return;
+                }
+                users[username] = { password: password, chats: [] };
+                localStorage.setItem('copilot_users', JSON.stringify(users));
+                currentUser = { username: username };
+                localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
+                setupUserSession();
+            } else {
+                if (!users[username] || users[username].password !== password) {
+                    alert("שם משתמש או סיסמה שגויים");
+                    return;
+                }
+                currentUser = { username: username };
+                localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
+                setupUserSession();
+            }
+        }
+
+        function setupUserSession() {
+            document.getElementById('auth-modal').classList.add('hidden');
+            document.getElementById('display-username').textContent = currentUser.username;
+            document.getElementById('greeting-name').textContent = `What can I help you with today, ${currentUser.username}?`;
+            loadUserChatsList();
+        }
+
+        function logout() {
+            localStorage.removeItem('copilot_current_user');
+            location.reload();
+        }
+
+        function loadUserChatsList() {
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            const userChats = users[currentUser.username]?.chats || [];
+            const container = document.getElementById('saved-chats-list');
+            container.innerHTML = '';
+
+            if (userChats.length === 0) {
+                container.innerHTML = '<span style="color:var(--text-muted); font-size:0.85rem;">אין שיחות שמורות עדיין</span>';
+                return;
+            }
+
+            userChats.slice(-3).reverse().forEach((chat, idx) => {
+                const item = document.createElement('div');
+                item.className = 'card-item';
+                item.onclick = () => openSavedChat(chat);
+                item.innerHTML = `
+                    <span>💬 ${chat.title}</span>
+                    <span class="item-time">שמורה</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function quickAsk(text) {
+            document.getElementById('home-input').value = text;
+            startChatFromHome();
+        }
+
+        function startChatFromHome() {
+            const text = document.getElementById('home-input').value.trim();
+            if (!text) return;
+
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('chat-view').classList.remove('hidden');
+
+            activeChatHistory = [];
+            sendChatMessage(text);
+        }
+
+        function showHome() {
+            document.getElementById('chat-view').classList.add('hidden');
+            document.getElementById('home-view').classList.remove('hidden');
+            loadUserChatsList();
+        }
+
+        async function sendChatMessage(customText) {
+            const input = document.getElementById('chat-input');
+            const text = customText || input.value.trim();
+            if (!text) return;
+
+            if (!customText) input.value = '';
+
+            const messagesContainer = document.getElementById('chat-messages');
+
+            // הוספת הודעת משתמש
+            activeChatHistory.push({ role: "user", content: text });
+            appendMessage(text, 'user-msg');
+
+            // הוספת הודעת AI טוענת
+            const loadingDiv = appendMessage('Thinking...', 'ai-msg');
 
             try {
                 const response = await fetch(API_BASE_URL + '/chat/completions', {
@@ -201,23 +634,61 @@
                     },
                     body: JSON.stringify({
                         model: "birgsol-3.5-pro",
-                        messages: [{ role: "user", content: userText }]
+                        messages: activeChatHistory
                     })
                 });
 
                 const data = await response.json();
                 
-                if (data.choices && data.choices[0].message && data.choices[0].message.content) {
-                    aiMessageDiv.textContent = data.choices[0].message.content;
-                } else if (data.error) {
-                    aiMessageDiv.textContent = "שגיאה מהשרת: " + (data.error.message || JSON.stringify(data.error));
+                if (data.choices && data.choices[0].message) {
+                    const aiReply = data.choices[0].message.content;
+                    loadingDiv.textContent = aiReply;
+                    activeChatHistory.push({ role: "assistant", content: aiReply });
+                    saveCurrentChat();
                 } else {
-                    aiMessageDiv.textContent = "תשובה התקבלה במבנה לא צפוי.";
+                    loadingDiv.textContent = "שגיאה בקבלת התשובה מהשרת";
                 }
-            } catch (error) {
-                aiMessageDiv.textContent = "שגיאת תקשורת מול השרת: " + error.message;
+            } catch (err) {
+                loadingDiv.textContent = "שגיאת תקשורת: " + err.message;
             }
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function appendMessage(text, className) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `msg ${className}`;
+            div.textContent = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return div;
+        }
+
+        function saveCurrentChat() {
+            if (!currentUser || activeChatHistory.length === 0) return;
+
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            if (!users[currentUser.username]) return;
+
+            const chatTitle = activeChatHistory[0].content.substring(0, 25) + '...';
+            const userChats = users[currentUser.username].chats || [];
+            
+            // עדכון או הוספת שיחה
+            userChats.push({ title: chatTitle, history: activeChatHistory });
+            users[currentUser.username].chats = userChats;
+            localStorage.setItem('copilot_users', JSON.stringify(users));
+        }
+
+        function openSavedChat(chat) {
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('chat-view').classList.remove('hidden');
+
+            activeChatHistory = chat.history;
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+
+            activeChatHistory.forEach(msg => {
+                appendMessage(msg.content, msg.role === 'user' ? 'user-msg' : 'ai-msg');
+            });
         }
     </script>
 </body>
