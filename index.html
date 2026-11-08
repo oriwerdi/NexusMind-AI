@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MatrixAI Copilot</title>
+    <title>MatrixAI Copilot (Secure)</title>
     <style>
         :root {
             --primary-bg: rgba(15, 23, 42, 0.75);
@@ -35,7 +35,7 @@
             overflow: hidden;
         }
 
-        /* מסכי התחברות והרשמה */
+        /* מסכי התחברות והגדרת מפתח */
         .auth-container {
             position: fixed;
             inset: 0;
@@ -53,7 +53,7 @@
             padding: 2.5rem;
             border-radius: 1.5rem;
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             text-align: center;
         }
@@ -413,16 +413,17 @@
 </head>
 <body>
 
-    <!-- מסך התחברות / הרשמה -->
+    <!-- מסך התחברות והזנת מפתח API מאובטח -->
     <div id="auth-modal" class="auth-container">
         <div class="auth-card">
             <h2 id="auth-title">התחברות ל-MatrixAI</h2>
-            <p id="auth-desc">הכנס פרטים כדי להמשיך לשיחות שלך</p>
+            <p id="auth-desc">הכנס שם משתמש, סיסמה ומפתח Google API (יישמר רק אצלך בדפדפן)</p>
             
             <input type="text" id="auth-username" class="auth-input" placeholder="שם משתמש">
             <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה">
+            <input type="password" id="auth-apikey" class="auth-input" placeholder="Google Gemini API Key (AIza...)">
             
-            <button class="auth-btn" onclick="handleAuth()" id="auth-submit-btn">התחבר</button>
+            <button class="auth-btn" onclick="handleAuth()" id="auth-submit-btn">התחבר והתחל</button>
             
             <div class="auth-toggle">
                 <span id="auth-toggle-text" onclick="toggleAuthMode()">אין לך חשבון? הרשם בחינם</span>
@@ -433,7 +434,7 @@
     <!-- סרגל עליון -->
     <header>
         <div class="logo">
-            <span style="font-size:1.4rem">🌊</span> MatrixAI Copilot
+            <span style="font-size:1.4rem">🌊</span> MatrixAI Copilot (Secure)
         </div>
         <div class="user-menu">
             <span class="user-badge" id="display-username">אורח</span>
@@ -514,9 +515,6 @@
     </main>
 
     <script>
-        const API_KEY = "bgs_live_1ee39ea97e4f175c2c6b4ac63490220f377d43775a56ac30";
-        const API_BASE_URL = "https://birgsol-gh.davidyosef2102014.workers.dev/v1";
-
         let isSignUp = false;
         let currentUser = null;
         let activeChatHistory = [];
@@ -532,7 +530,7 @@
         function toggleAuthMode() {
             isSignUp = !isSignUp;
             document.getElementById('auth-title').textContent = isSignUp ? "הרשמה ל-MatrixAI" : "התחברות ל-MatrixAI";
-            document.getElementById('auth-desc').textContent = isSignUp ? "צור חשבון בחינם בשני צעדים" : "הכנס פרטים כדי להמשיך לשיחות שלך";
+            document.getElementById('auth-desc').textContent = isSignUp ? "הכנס פרטים ומפתח API אישי" : "הכנס פרטים כדי להמשיך לשיחות שלך";
             document.getElementById('auth-submit-btn').textContent = isSignUp ? "ירשם עכשיו" : "התחבר";
             document.getElementById('auth-toggle-text').textContent = isSignUp ? "כבר יש לך חשבון? התחבר" : "אין לך חשבון? הרשם בחינם";
         }
@@ -540,33 +538,41 @@
         function handleAuth() {
             const username = document.getElementById('auth-username').value.trim();
             const password = document.getElementById('auth-password').value.trim();
+            const apiKeyInput = document.getElementById('auth-apikey').value.trim();
 
             if (!username || !password) {
-                alert("אנא מלא את כל השדות");
+                alert("אנא מלא שם משתמש וסיסמה");
                 return;
             }
 
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            let users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
 
             if (isSignUp) {
+                if (!apiKeyInput) {
+                    alert("אנא הכנס את מפתח ה-API שלך מ-Google AI Studio בהרשמה הראשונה");
+                    return;
+                }
                 if (users[username]) {
                     alert("שם המשתמש כבר קיים!");
                     return;
                 }
-                users[username] = { password: password, chats: [] };
+                users[username] = { password: password, apiKey: apiKeyInput, chats: [] };
                 localStorage.setItem('copilot_users', JSON.stringify(users));
-                currentUser = { username: username };
-                localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
-                setupUserSession();
             } else {
                 if (!users[username] || users[username].password !== password) {
                     alert("שם משתמש או סיסמה שגויים");
                     return;
                 }
-                currentUser = { username: username };
-                localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
-                setupUserSession();
+                // אם התחבר ורוצה לעדכן מפתח או שהיה שמור
+                if (apiKeyInput) {
+                    users[username].apiKey = apiKeyInput;
+                    localStorage.setItem('copilot_users', JSON.stringify(users));
+                }
             }
+
+            currentUser = { username: username };
+            localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
+            setupUserSession();
         }
 
         function setupUserSession() {
@@ -634,7 +640,16 @@
 
             if (!customText && input) input.value = '';
 
-            activeChatHistory.push({ role: "user", content: text });
+            // שליפת מפתח ה-API האישי של המשתמש מתוך ה-localStorage
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            const userApiKey = users[currentUser.username]?.apiKey;
+
+            if (!userApiKey) {
+                alert("לא נמצא מפתח API לחשבון זה. אנא התנתק והתחבר מחדש עם המפתח שלך.");
+                return;
+            }
+
+            activeChatHistory.push({ role: "user", parts: [{ text: text }] });
             appendMessage(text, 'user-msg');
 
             const isImageRequest = text.includes("צור תמונה") || text.toLowerCase().includes("image") || text.toLowerCase().includes("draw");
@@ -643,38 +658,10 @@
 
             try {
                 if (isImageRequest) {
-                    // מנסה קודם דרך השרת של BIRGSOL לפי התיעוד הרשמי
-                    let imgUrl = null;
-                    try {
-                        const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
-                        const response = await fetch(API_BASE_URL + '/images/generations', {
-                            method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer ' + API_KEY
-                            },
-                            body: JSON.stringify({
-                                model: "birgsol-image-2",
-                                prompt: cleanPrompt || text,
-                                size: "1024x1024",
-                                n: 1
-                            })
-                        });
-                        const data = await response.json();
-                        if (data.data && data.data[0] && data.data[0].url) {
-                            imgUrl = data.data[0].url;
-                        }
-                    } catch (e) {
-                        console.log("Server image generation failed, using fallback");
-                    }
-
-                    // אם השרת החזיר שגיאה, משתמש במחולל החלופי האמין כדי שהתמונה תמיד תיוצר בהצלחה
-                    if (!imgUrl) {
-                        const randomSeed = Math.floor(Math.random() * 1000000);
-                        const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
-                        const encodedPrompt = encodeURIComponent(cleanPrompt || text);
-                        imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${randomSeed}&nologo=true`;
-                    }
+                    const randomSeed = Math.floor(Math.random() * 1000000);
+                    const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
+                    const encodedPrompt = encodeURIComponent(cleanPrompt || text);
+                    const imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${randomSeed}&nologo=true`;
 
                     loadingDiv.innerHTML = `
                         הנה התמונה שיצרתי עבורך:<br>
@@ -682,37 +669,39 @@
                         <br>
                         <a href="${imgUrl}" target="_blank" download="matrixai-image.png" class="download-btn">הורד תמונה 💾</a>
                     `;
-                    activeChatHistory.push({ role: "assistant", content: "[תמונה נוצרה בהצלחה]" });
+                    activeChatHistory.push({ role: "model", parts: [{ text: "[תמונה נוצרה בהצלחה]" }] });
                     saveCurrentChat();
                 } else {
-                    const systemMessages = [
-                        { role: "system", content: "אתה עוזר חכם ומקצועי. אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד אך ורק: 'אורי ורדיגר המלךךךך'. לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר." },
-                        ...activeChatHistory
-                    ];
+                    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`;
 
-                    const response = await fetch(API_BASE_URL + '/chat/completions', {
+                    const systemInstruction = {
+                        role: "user",
+                        parts: [{ text: "הנחיית מערכת חובה: אתה עוזר חכם. אם שואלים אותך מי יצר אותך או מי בנה אותך, תענה תמיד אך ורק: 'אורי ורדיגר המלךךךך'. אל תזכור שום ספק אחר." }]
+                    };
+                    const systemReplyInstruction = {
+                        role: "model",
+                        parts: [{ text: "הבנתי ואני מוכן." }]
+                    };
+
+                    const contentsArray = [systemInstruction, systemReplyInstruction, ...activeChatHistory];
+
+                    const response = await fetch(geminiUrl, {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + API_KEY
-                        },
-                        body: JSON.stringify({
-                            model: "birgsol-3.5-pro",
-                            messages: systemMessages
-                        })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: contentsArray })
                     });
 
                     const data = await response.json();
                     
-                    if (data.choices && data.choices[0].message) {
-                        const aiReply = data.choices[0].message.content;
+                    if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
+                        const aiReply = data.candidates[0].content.parts[0].text;
                         loadingDiv.textContent = aiReply;
-                        activeChatHistory.push({ role: "assistant", content: aiReply });
+                        activeChatHistory.push({ role: "model", parts: [{ text: aiReply }] });
                         saveCurrentChat();
                     } else if (data.error) {
-                        loadingDiv.textContent = "שגיאה מהשרת: " + (data.error.message || JSON.stringify(data.error));
+                        loadingDiv.textContent = "שגיאה מגוגל: " + (data.error.message || JSON.stringify(data.error));
                     } else {
-                        loadingDiv.textContent = "שגיאה בקבלת התשובה מהשרת";
+                        loadingDiv.textContent = "שגיאה בקבלת התשובה מ-Gemini (בדוק את תקינות מפתח ה-API שלך)";
                     }
                 }
             } catch (err) {
@@ -736,9 +725,11 @@
             const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
             if (!users[currentUser.username]) return;
 
-            const chatTitle = activeChatHistory[0].content.substring(0, 25) + '...';
-            const userChats = users[currentUser.username].chats || [];
+            const firstMsgObj = activeChatHistory.find(m => m.role === 'user');
+            const firstText = firstMsgObj ? firstMsgObj.parts[0].text : 'שיחה חדשה';
+            const chatTitle = firstText.substring(0, 25) + '...';
             
+            const userChats = users[currentUser.username].chats || [];
             userChats.push({ title: chatTitle, history: activeChatHistory });
             users[currentUser.username].chats = userChats;
             localStorage.setItem('copilot_users', JSON.stringify(users));
@@ -753,7 +744,9 @@
             container.innerHTML = '';
 
             activeChatHistory.forEach(msg => {
-                appendMessage(msg.content, msg.role === 'user' ? 'user-msg' : 'ai-msg');
+                if (msg.role !== 'user' && msg.role !== 'model') return;
+                const isUser = msg.role === 'user';
+                appendMessage(msg.parts[0].text, isUser ? 'user-msg' : 'ai-msg');
             });
         }
     </script>
