@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My AI Web App</title>
+    <title>MatrixAI Chat</title>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-color: #f8fafc;
-            --accent-color: #3b82f6;
-            --accent-hover: #2563eb;
+            --bg-color: #0b132b;
+            --chat-bg: #1c2541;
+            --header-bg: #0b132b;
+            --text-color: #ffffff;
+            --user-bubble: #3a86ff;
+            --ai-bubble: #27344e;
+            --input-bg: #1c2541;
+            --border-color: #303b58;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -23,92 +26,137 @@
             height: 100vh;
         }
         header {
-            background-color: var(--card-bg);
+            background-color: var(--header-bg);
             padding: 1rem;
             text-align: center;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--border-color);
             font-size: 1.25rem;
             font-weight: bold;
+            letter-spacing: 0.5px;
         }
         #chat-container {
             flex: 1;
             overflow-y: auto;
-            padding: 1rem;
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
             margin: 0 auto;
+            box-sizing: border-box;
+        }
+        .message-wrapper {
+            display: flex;
+            gap: 0.75rem;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .user-wrapper {
+            align-self: flex-start;
+            flex-direction: row-reverse;
+        }
+        .ai-wrapper {
+            align-self: flex-end;
+        }
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .user-avatar {
+            background-color: #4361ee;
+        }
+        .ai-avatar {
+            background-color: #7209b7;
         }
         .message {
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            max-width: 75%;
-            line-height: 1.5;
+            padding: 0.85rem 1.1rem;
+            border-radius: 1rem;
+            line-height: 1.6;
             word-wrap: break-word;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .user-message {
-            background-color: var(--accent-color);
+            background-color: var(--user-bubble);
             color: white;
-            align-self: flex-start;
+            border-top-left-radius: 0.2rem;
         }
         .ai-message {
-            background-color: var(--card-bg);
+            background-color: var(--ai-bubble);
             color: var(--text-color);
-            align-self: flex-end;
-            border: 1px solid #334155;
+            border: 1px solid var(--border-color);
+            border-top-right-radius: 0.2rem;
         }
         #input-container {
-            background-color: var(--card-bg);
-            padding: 1rem;
-            border-top: 1px solid #334155;
+            background-color: var(--header-bg);
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
             display: flex;
-            gap: 0.5rem;
-            max-width: 800px;
+            gap: 0.75rem;
+            max-width: 900px;
             width: 100%;
             margin: 0 auto;
             box-sizing: border-box;
         }
         input[type="text"] {
             flex: 1;
-            padding: 0.75rem;
-            border-radius: 0.375rem;
-            border: 1px solid #475569;
-            background-color: #0f172a;
+            padding: 0.85rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
             color: white;
             font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus {
+            border-color: #3a86ff;
         }
         button {
-            background-color: var(--accent-color);
+            background-color: #3a86ff;
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.375rem;
+            padding: 0 1.5rem;
+            border-radius: 0.75rem;
             cursor: pointer;
             font-weight: bold;
+            font-size: 1rem;
             transition: background 0.2s;
         }
         button:hover {
-            background-color: var(--accent-hover);
+            background-color: #2667cc;
         }
     </style>
 </head>
 <body>
 
-    <header>🤖 My AI Assistant</header>
+    <header>🤖 MatrixAI Chat Room</header>
 
     <div id="chat-container">
-        <div class="message ai-message">אהלן! הקלד הודעה למטה כדי להתחיל לדבר עם הבינה המלאכותית.</div>
+        <div class="message-wrapper ai-wrapper">
+            <div class="avatar ai-avatar">🤖</div>
+            <div class="message ai-message">אהלן! אני המודל שלך מבית BIRGSOL. איך אפשר לעזור לך היום?</div>
+        </div>
     </div>
 
     <div id="input-container">
-        <input type="text" id="user-input" placeholder="הקלד את ההודעה שלך כאן..." onkeydown="if(event.key === 'Enter') sendMessage()">
+        <input type="text" id="user-input" placeholder="הקלד הודעה..." onkeydown="if(event.key === 'Enter') sendMessage()">
         <button onclick="sendMessage()">שלח</button>
     </div>
 
     <script>
-        // הגדרות הגישה החדשות
         const API_KEY = "bgs_live_1ee39ea97e4f175c2c6b4ac63490220f377d43775a56ac30";
         const API_BASE_URL = "https://birgsol-gh.davidyosef2102014.workers.dev/v1";
 
@@ -119,47 +167,55 @@
 
             if (!userText) return;
 
-            // הצגת הודעת המשתמש
-            const userMsgDiv = document.createElement('div');
-            userMsgDiv.className = 'message user-message';
-            userMsgDiv.textContent = userText;
-            chatContainer.appendChild(userMsgDiv);
+            // הוספת הודעת משתמש בעיצוב צ'אט
+            const userWrapper = document.createElement('div');
+            userWrapper.className = 'message-wrapper user-wrapper';
+            userWrapper.innerHTML = `
+                <div class="avatar user-avatar">👤</div>
+                <div class="message user-message"></div>
+            `;
+            userWrapper.querySelector('.message').textContent = userText;
+            chatContainer.appendChild(userWrapper);
 
             inputField.value = '';
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
-            // הודעת טעינה
-            const aiMsgDiv = document.createElement('div');
-            aiMsgDiv.className = 'message ai-message';
-            aiMsgDiv.textContent = 'חושב...';
-            chatContainer.appendChild(aiMsgDiv);
+            // הוספת הודעת טעינה של ה-AI
+            const aiWrapper = document.createElement('div');
+            aiWrapper.className = 'message-wrapper ai-wrapper';
+            aiWrapper.innerHTML = `
+                <div class="avatar ai-avatar">🤖</div>
+                <div class="message ai-message">חושב...</div>
+            `;
+            chatContainer.appendChild(aiWrapper);
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
+            const aiMessageDiv = aiWrapper.querySelector('.message');
+
             try {
-                // ביצוע קריאת ה-API לכתובת ה-Worker שהגדרת
                 const response = await fetch(API_BASE_URL + '/chat/completions', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + API_KEY
                     },
-body: JSON.stringify({
-    model: "birgsol-3.5-pro", // שונה למודל המדויק מתוך הרשימה של BIRGSOL
-    messages: [{ role: "user", content: userText }]
-})
+                    body: JSON.stringify({
+                        model: "birgsol-3.5-pro",
+                        messages: [{ role: "user", content: userText }]
+                    })
                 });
 
                 const data = await response.json();
                 
                 if (data.choices && data.choices[0].message && data.choices[0].message.content) {
-                    aiMsgDiv.textContent = data.choices[0].message.content;
+                    aiMessageDiv.textContent = data.choices[0].message.content;
                 } else if (data.error) {
-                    aiMsgDiv.textContent = "שגיאה מהשרת: " + (data.error.message || JSON.stringify(data.error));
+                    aiMessageDiv.textContent = "שגיאה מהשרת: " + (data.error.message || JSON.stringify(data.error));
                 } else {
-                    aiMsgDiv.textContent = "תשובה התקבלה במבנה לא צפוי.";
+                    aiMessageDiv.textContent = "תשובה התקבלה במבנה לא צפוי.";
                 }
             } catch (error) {
-                aiMsgDiv.textContent = "שגיאת תקשורת מול השרת: " + error.message;
+                aiMessageDiv.textContent = "שגיאת תקשורת מול השרת: " + error.message;
             }
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
