@@ -193,7 +193,7 @@
             color: #ffffff;
         }
 
-        /* תיבת קלט ראשי מעוגלת */
+        /* תיבת קלט ראשית */
         .search-box-container {
             width: 100%;
             max-width: 720px;
@@ -338,12 +338,14 @@
 
         /* מסך שיחה פעילה */
         .chat-active-view {
-            display: none;
+            display: flex;
             flex-direction: column;
             height: 100%;
             width: 100%;
-            max-width: 850px;
+            max-width: 900px;
             margin: 0 auto;
+            flex: 1;
+            padding: 1.5rem;
         }
 
         .chat-messages {
@@ -353,14 +355,16 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            width: 100%;
         }
 
         .msg {
-            max-width: 80%;
+            max-width: 75%;
             padding: 0.9rem 1.2rem;
             border-radius: 1.25rem;
-            line-height: 1.5;
+            line-height: 1.6;
             font-size: 0.95rem;
+            word-wrap: break-word;
         }
 
         .user-msg {
@@ -503,7 +507,6 @@
         let currentUser = null;
         let activeChatHistory = [];
 
-        // בדיקת משתמש מחובר בטעינה
         window.onload = function() {
             const savedUser = localStorage.getItem('copilot_current_user');
             if (savedUser) {
@@ -575,7 +578,7 @@
                 return;
             }
 
-            userChats.slice(-3).reverse().forEach((chat, idx) => {
+            userChats.slice(-3).reverse().forEach((chat) => {
                 const item = document.createElement('div');
                 item.className = 'card-item';
                 item.onclick = () => openSavedChat(chat);
@@ -600,6 +603,7 @@
             document.getElementById('chat-view').classList.remove('hidden');
 
             activeChatHistory = [];
+            document.getElementById('chat-messages').innerHTML = '';
             sendChatMessage(text);
         }
 
@@ -614,16 +618,14 @@
             const text = customText || input.value.trim();
             if (!text) return;
 
-            if (!customText) input.value = '';
-
-            const messagesContainer = document.getElementById('chat-messages');
+            if (!customText && input) input.value = '';
 
             // הוספת הודעת משתמש
             activeChatHistory.push({ role: "user", content: text });
             appendMessage(text, 'user-msg');
 
             // הוספת הודעת AI טוענת
-            const loadingDiv = appendMessage('Thinking...', 'ai-msg');
+            const loadingDiv = appendMessage('חושב...', 'ai-msg');
 
             try {
                 const response = await fetch(API_BASE_URL + '/chat/completions', {
@@ -642,9 +644,11 @@
                 
                 if (data.choices && data.choices[0].message) {
                     const aiReply = data.choices[0].message.content;
-                    loadingDiv.textContent = aiReply;
+                    loadingDiv.textContent = aiReply; // מציג רק את הטקסט הנקי ללא שמות מיותרים
                     activeChatHistory.push({ role: "assistant", content: aiReply });
                     saveCurrentChat();
+                } else if (data.error) {
+                    loadingDiv.textContent = "שגיאה מהשרת: " + (data.error.message || JSON.stringify(data.error));
                 } else {
                     loadingDiv.textContent = "שגיאה בקבלת התשובה מהשרת";
                 }
@@ -672,7 +676,6 @@
             const chatTitle = activeChatHistory[0].content.substring(0, 25) + '...';
             const userChats = users[currentUser.username].chats || [];
             
-            // עדכון או הוספת שיחה
             userChats.push({ title: chatTitle, history: activeChatHistory });
             users[currentUser.username].chats = userChats;
             localStorage.setItem('copilot_users', JSON.stringify(users));
