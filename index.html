@@ -189,8 +189,9 @@
             text-overflow: ellipsis;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 0.5rem;
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             margin-bottom: 0.3rem;
             border: 1px solid transparent;
         }
@@ -200,10 +201,45 @@
             color: var(--accent);
             border-color: var(--card-border);
             transform: translateX(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
         [dir="ltr"] .history-item:hover {
             transform: translateX(3px);
+        }
+
+        .history-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .delete-chat-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.85rem;
+            opacity: 0.6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.3rem;
+            transition: all 0.2s ease;
+        }
+
+        .delete-chat-btn:hover {
+            opacity: 1;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .sidebar-settings {
+            border-top: 1px solid var(--card-border);
+            padding-top: 0.75rem;
+            margin-top: auto;
         }
 
         /* מעטפת הראשית */
@@ -423,46 +459,72 @@
 
         .search-box-input {
             width: 100%;
-            background: transparent;
+            background: transparent !important;
             border: none;
-            color: var(--text-main);
+            color: var(--text-main) !important;
             font-size: 1.1rem;
             outline: none;
             margin-bottom: 1rem;
+            caret-color: var(--accent);
+        }
+
+        .search-box-input:-webkit-autofill,
+        .search-box-input:-webkit-autofill:hover, 
+        .search-box-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--text-main) !important;
+            -webkit-box-shadow: 0 0 0px 1000px rgba(15, 23, 42, 0.8) inset !important;
+            transition: background-color 5000s ease-in-out 0s;
         }
 
         .search-box-input::placeholder {
             color: var(--text-muted);
         }
-
-        .search-box-tools {
+        /* סרגל עליון */
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 1rem 1.5rem;
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--card-border);
         }
 
-        .quick-response-badge {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid var(--card-border);
-            padding: 0.3rem 0.7rem;
-            border-radius: 1rem;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-
-        .search-actions {
+        .header-left {
             display: flex;
-            gap: 0.75rem;
             align-items: center;
+            gap: 0.75rem;
         }
 
-        .icon-btn {
+        .back-nav-btn {
             background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.1rem;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .back-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--accent);
+            transform: scale(1.08);
+        }
+
+        .sidebar-toggle-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 0.4rem 0.7rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1.2rem;
             transition: 0.2s;
         }
 
@@ -617,6 +679,12 @@
         <div class="sidebar-content">
             <div class="sidebar-title" id="lbl-recent-chats">השיחות האחרונות</div>
             <div id="sidebar-chats-list"></div>
+            
+            <div class="sidebar-settings">
+                <div class="history-item" onclick="openSettingsModal()">
+                    <span class="history-title-wrapper">⚙️ <span id="lbl-settings-item">הגדרות</span></span>
+                </div>
+            </div>
         </div>
     </aside>
 
@@ -643,6 +711,7 @@
         <!-- סרגל עליון -->
         <header>
             <div class="header-left">
+                <button id="btn-back-nav" class="back-nav-btn hidden" onclick="showHome()" title="Back / חזרה">←</button>
                 <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
                 <div class="logo">
                     <span style="font-size:1.4rem">🌊</span> MatrixAI Copilot
@@ -696,7 +765,7 @@
             <div class="search-box-container" style="margin-bottom: 0;">
                 <input type="text" id="chat-input" class="search-box-input" placeholder="הקלד הודעה או בקשה לתמונה..." onkeydown="if(event.key === 'Enter') sendChatMessage()">
                 <div class="search-box-tools">
-                    <button class="quick-response-badge" id="lbl-back-home" onclick="showHome()">← חזרה לדף הבית</button>
+                    <span style="font-size:0.8rem; color:var(--text-muted);" id="lbl-ai-status">MatrixAI Copilot v2.5</span>
                     <button class="icon-btn" onclick="sendChatMessage()">➔</button>
                 </div>
             </div>
@@ -707,7 +776,6 @@
         const API_KEY = "bgs_live_1ee39ea97e4f175c2c6b4ac63490220f377d43775a56ac30";
         const API_BASE_URL = "https://birgsol-gh.davidyosef2102014.workers.dev/v1";
 
-        // כאן אתה יכול להדביק איזה קישורי וידאו (URL של MP4) שאתה רוצה לכל ערכת נושא!
         const themeVideos = {
             ocean: "https://www.pexels.com/download/video/32132547/",
             purple: "https://www.pexels.com/download/video/10754257/",
@@ -728,7 +796,6 @@
                 placeholderHome: "שאל שאלה או בקש ליצור תמונה...",
                 placeholderChat: "הקלד הודעה או בקשה לתמונה...",
                 createImg: "🖼️ צור תמונה",
-                backHome: "← חזרה לדף הבית",
                 logout: "התנתק",
                 guest: "אורח",
                 loginTitle: "התחברות ל-MatrixAI",
@@ -742,6 +809,7 @@
                 recentChats: "השיחות האחרונות",
                 newChat: "+ שיחה חדשה",
                 noChats: "אין שיחות שמורות עדיין",
+                settings: "הגדרות",
                 creatorQ: "מי יצר אותך?",
                 catQ: "צור תמונה של חתול בחלל 🎨",
                 codeQ: "קוד לרובלוקס",
@@ -753,7 +821,6 @@
                 placeholderHome: "Ask a question or request an image...",
                 placeholderChat: "Type a message or request an image...",
                 createImg: "🖼️ Generate Image",
-                backHome: "← Back to Home",
                 logout: "Log Out",
                 guest: "Guest",
                 loginTitle: "Login to MatrixAI",
@@ -767,6 +834,7 @@
                 recentChats: "Recent Chats",
                 newChat: "+ New Chat",
                 noChats: "No saved chats yet",
+                settings: "Settings",
                 creatorQ: "Who created you?",
                 catQ: "Create an image of a cat in space 🎨",
                 codeQ: "Code for Roblox",
@@ -775,7 +843,7 @@
         };
 
         const creatorResponsesHe = [
-            "אורי ורדיגר המלך",
+            "אורי ורדיגר המלךךךך",
             "אורי ורדיגר האגדי!",
             "אורי ורדיגר התותח",
             "אורי ורדיגר המאסטר הגדול",
@@ -819,9 +887,6 @@
 
             const lblLogout = document.getElementById('lbl-logout');
             if (lblLogout) lblLogout.textContent = t.logout;
-            
-            const btnBack = document.getElementById('lbl-back-home');
-            if (btnBack) btnBack.textContent = t.backHome;
 
             const createImgLbl = document.getElementById('lbl-create-img');
             if (createImgLbl) createImgLbl.textContent = t.createImg;
@@ -831,6 +896,9 @@
 
             const sidebarTitle = document.getElementById('lbl-recent-chats');
             if (sidebarTitle) sidebarTitle.textContent = t.recentChats;
+
+            const settingsItem = document.getElementById('lbl-settings-item');
+            if (settingsItem) settingsItem.textContent = t.settings;
 
             const chips = document.querySelectorAll('.chip');
             if (chips.length >= 4) {
@@ -853,7 +921,6 @@
                 document.body.classList.add(`theme-${themeName}`);
             }
             
-            // עדכון סרטון הרקע בהתאם לנושא
             const videoElem = document.getElementById('bg-video');
             if (videoElem && themeVideos[themeName]) {
                 videoElem.src = themeVideos[themeName];
@@ -954,10 +1021,47 @@
             userChats.slice().reverse().forEach((chat) => {
                 const item = document.createElement('div');
                 item.className = 'history-item';
-                item.onclick = () => openSavedChat(chat);
-                item.innerHTML = `<span>💬</span> <span>${chat.title}</span>`;
+                
+                item.innerHTML = `
+                    <div class="history-title-wrapper" onclick="openSavedChatById('${chat.id}')">
+                        <span>💬</span>
+                        <span>${chat.title}</span>
+                    </div>
+                    <button class="delete-chat-btn" title="Delete / מחק" onclick="event.stopPropagation(); deleteSavedChat('${chat.id}')">🗑️</button>
+                `;
                 container.appendChild(item);
             });
+        }
+
+        function deleteSavedChat(chatId) {
+            if (!currentUser) return;
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            if (!users[currentUser.username]) return;
+
+            let userChats = users[currentUser.username].chats || [];
+            userChats = userChats.filter(c => c.id !== chatId);
+            users[currentUser.username].chats = userChats;
+            localStorage.setItem('copilot_users', JSON.stringify(users));
+
+            if (currentChatId === chatId) {
+                createNewChat();
+            } else {
+                loadUserChatsList();
+            }
+        }
+
+        function openSavedChatById(chatId) {
+            if (!currentUser) return;
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            const userChats = users[currentUser.username]?.chats || [];
+            const targetChat = userChats.find(c => c.id === chatId);
+            if (targetChat) {
+                openSavedChat(targetChat);
+            }
+        }
+
+        function openSettingsModal() {
+            alert(currentLang === 'he' ? "הגדרות חשבון ואישיות זמינות בסרגל העליון דרך בורר השפה והערכות נושא!" : "Account settings and theme preferences are accessible from the top bar!");
         }
 
         function createNewChat() {
@@ -978,6 +1082,7 @@
 
             document.getElementById('home-view').classList.add('hidden');
             document.getElementById('chat-view').classList.remove('hidden');
+            document.getElementById('btn-back-nav').classList.remove('hidden');
 
             activeChatHistory = [];
             currentChatId = Date.now().toString();
@@ -988,6 +1093,7 @@
         function showHome() {
             document.getElementById('chat-view').classList.add('hidden');
             document.getElementById('home-view').classList.remove('hidden');
+            document.getElementById('btn-back-nav').classList.add('hidden');
             loadUserChatsList();
         }
 
@@ -1051,9 +1157,11 @@
                         ? creatorResponsesHe[Math.floor(Math.random() * creatorResponsesHe.length)]
                         : creatorResponsesEn[Math.floor(Math.random() * creatorResponsesEn.length)];
 
+                    const userNameStr = currentUser ? currentUser.username : "User";
+
                     const systemPromptText = currentLang === 'he'
-                        ? `אתה עוזר חכם ומקצועי. ענה בשפה שבה הפנו אליך שאלה (עברית או אנגלית). אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד ברנדומליות בסגנון: "${randomCreatorResp}". לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר.`
-                        : `You are a smart and helpful assistant. Respond in the language used by the user. If asked who created, built, or owns you, ALWAYS answer: "${randomCreatorResp}". Do not name third parties or call yourself anything else.`;
+                        ? `אתה עוזר חכם ומקצועי. שם המשתמש מולך הוא ${userNameStr}. ענה בשפה שבה הפנו אליך שאלה (עברית או אנגלית). אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד ברנדומליות בסגנון: "${randomCreatorResp}". לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר.`
+                        : `You are a smart and empathetic AI assistant. The current user name is ${userNameStr}. Respond in the language used by the user. If asked who created, built, or owns you, ALWAYS answer dynamically like: "${randomCreatorResp}". Do not name third parties or call yourself anything else.`;
 
                     const systemMessages = [
                         { role: "system", content: systemPromptText },
@@ -1136,6 +1244,7 @@
         function openSavedChat(chat) {
             document.getElementById('home-view').classList.add('hidden');
             document.getElementById('chat-view').classList.remove('hidden');
+            document.getElementById('btn-back-nav').classList.remove('hidden');
 
             activeChatHistory = chat.history;
             currentChatId = chat.id || Date.now().toString();
