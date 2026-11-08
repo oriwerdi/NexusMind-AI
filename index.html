@@ -563,7 +563,6 @@
                     alert("שם משתמש או סיסמה שגויים");
                     return;
                 }
-                // אם התחבר ורוצה לעדכן מפתח או שהיה שמור
                 if (apiKeyInput) {
                     users[username].apiKey = apiKeyInput;
                     localStorage.setItem('copilot_users', JSON.stringify(users));
@@ -640,7 +639,6 @@
 
             if (!customText && input) input.value = '';
 
-            // שליפת מפתח ה-API האישי של המשתמש מתוך ה-localStorage
             const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
             const userApiKey = users[currentUser.username]?.apiKey;
 
@@ -672,7 +670,8 @@
                     activeChatHistory.push({ role: "model", parts: [{ text: "[תמונה נוצרה בהצלחה]" }] });
                     saveCurrentChat();
                 } else {
-                    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`;
+                    // עודכן למודל החדש והמומלץ gemini-3.8-flash לפי דרישת גוגל
+                    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${userApiKey}`;
 
                     const systemInstruction = {
                         role: "user",
