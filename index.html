@@ -637,27 +637,47 @@
             activeChatHistory.push({ role: "user", content: text });
             appendMessage(text, 'user-msg');
 
+            // זיהוי בקשת תמונה לפי מה שהגדרת בתיעוד BIRGSOL
             const isImageRequest = text.includes("צור תמונה") || text.toLowerCase().includes("image") || text.toLowerCase().includes("draw");
 
-            const loadingDiv = appendMessage('חושב...', 'ai-msg');
+            const loadingDiv = appendMessage('מעבד בקשה...', 'ai-msg');
 
             try {
                 if (isImageRequest) {
-                    // הוספת מספר אקראי (seed) כדי שכל תמונה תצא ייחודית ושונה
-                    const randomSeed = Math.floor(Math.random() * 1000000);
+                    // ניקוי הטקסט כדי לשלוח את הפרומפט הנקי לשרת של BIRGSOL לפי התיעוד
                     const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
-                    const encodedPrompt = encodeURIComponent(cleanPrompt || text);
-                    const imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${randomSeed}&nologo=true`;
 
-                    // יצירת תמונה עם כפתור הורדה מובנה
-                    loadingDiv.innerHTML = `
-                        הנה התמונה שיצרתי עבורך:<br>
-                        <img src="${imgUrl}" alt="Generated Image" crossorigin="anonymous">
-                        <br>
-                        <a href="${imgUrl}" target="_blank" download="matrixai-image.jpg" class="download-btn">הורד תמונה 💾</a>
-                    `;
-                    activeChatHistory.push({ role: "assistant", content: "[תמונה נוצרה בהצלחה]" });
-                    saveCurrentChat();
+                    const response = await fetch(API_BASE_URL + '/images/generations', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + API_KEY
+                        },
+                        body: JSON.stringify({
+                            model: "birgsol-image-2",
+                            prompt: cleanPrompt || text,
+                            size: "1024x1024",
+                            n: 1
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.data && data.data[0] && data.data[0].url) {
+                        const imgUrl = data.data[0].url;
+                        loadingDiv.innerHTML = `
+                            הנה התמונה שיצרתי עבורך דרך BIRGSOL Image 2:<br>
+                            <img src="${imgUrl}" alt="Generated Image" crossorigin="anonymous">
+                            <br>
+                            <a href="${imgUrl}" target="_blank" download="matrixai-image.png" class="download-btn">הורד תמונה 💾</a>
+                        `;
+                        activeChatHistory.push({ role: "assistant", content: "[תמונה נוצרה בהצלחה]" });
+                        saveCurrentChat();
+                    } else if (data.error) {
+                        loadingDiv.textContent = "שגיאה מהשרת: " + (data.error.message || JSON.stringify(data.error));
+                    } else {
+                        loadingDiv.textContent = "שגיאה ביצירת התמונה (השרת לא החזיר כתובת תקינה).";
+                    }
                 } else {
                     const systemMessages = [
                         { role: "system", content: "אתה עוזר חכם ומקצועי. אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד אך ורק: 'אורי ורדיגר המלךךךך'. לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר." },
