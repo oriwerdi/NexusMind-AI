@@ -387,6 +387,7 @@
             max-width: 100%;
             border-radius: 0.75rem;
             margin-top: 0.5rem;
+            display: block;
         }
 
         .hidden { display: none !important; }
@@ -473,7 +474,7 @@
             </div>
 
             <div class="copilot-card">
-                <div class="card-header">واصل
+                <div class="card-header">
                     <span>💬 השיחות שלך</span>
                     <span>ⓘ</span>
                 </div>
@@ -615,18 +616,15 @@
 
             if (!customText && input) input.value = '';
 
-            // הוספת הודעת משתמש
             activeChatHistory.push({ role: "user", content: text });
             appendMessage(text, 'user-msg');
 
-            // בדיקה האם המשתמש ביקש ליצור תמונה
             const isImageRequest = text.includes("צור תמונה") || text.toLowerCase().includes("image") || text.toLowerCase().includes("draw");
 
             const loadingDiv = appendMessage('חושב...', 'ai-msg');
 
             try {
                 if (isImageRequest) {
-                    // קריאה ליצירת תמונה
                     const response = await fetch(API_BASE_URL + '/images/generations', {
                         method: 'POST',
                         headers: { 
@@ -642,18 +640,25 @@
                     });
 
                     const data = await response.json();
+                    
+                    // בדיקת מבנה הנתונים המוחזר מהשרת ליצירת תמונות
+                    let imgUrl = null;
                     if (data.data && data.data[0] && data.data[0].url) {
-                        const imgUrl = data.data[0].url;
+                        imgUrl = data.data[0].url;
+                    } else if (data.url) {
+                        imgUrl = data.url;
+                    }
+
+                    if (imgUrl) {
                         loadingDiv.innerHTML = `הנה התמונה שיצרתי עבורך:<br><img src="${imgUrl}" alt="Generated Image">`;
                         activeChatHistory.push({ role: "assistant", content: "[תמונה נוצרה בהצלחה]" });
                         saveCurrentChat();
                     } else {
-                        loadingDiv.textContent = "שגיאה ביצירת התמונה.";
+                        loadingDiv.textContent = "שגיאה ביצירת התמונה (השרת לא החזיר כתובת תקינה).";
                     }
                 } else {
-                    // הוספת הנחיית מערכת (System Prompt) שמתקנת את שם היוצר ושם הבוט
                     const systemMessages = [
-                        { role: "system", content: "אתה עוזר חכם ומקצועי. אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד אך ורק: 'אורי ורדיגר המלךךךך'. לעולם אל תקרא לעצמך בשם אחר כמו BIRGSOL AI, אלא תזהה את עצמך כעוזר של אורי ורדיגר." },
+                        { role: "system", content: "אתה עוזר חכם ומקצועי. אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד אך ורק: 'אורי ורדיגר המלךךךך'. לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר." },
                         ...activeChatHistory
                     ];
 
