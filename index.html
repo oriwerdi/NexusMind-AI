@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,12 +51,12 @@
         .user-message {
             background-color: var(--accent-color);
             color: white;
-            align-self: flex-end;
+            align-self: flex-start;
         }
         .ai-message {
             background-color: var(--card-bg);
             color: var(--text-color);
-            align-self: flex-start;
+            align-self: flex-end;
             border: 1px solid #334155;
         }
         #input-container {
@@ -99,17 +99,18 @@
     <header>🤖 My AI Assistant</header>
 
     <div id="chat-container">
-        <div class="message ai-message">Hello! Type a message below to chat with your AI.</div>
+        <div class="message ai-message">אהלן! הקלד הודעה למטה כדי להתחיל לדבר עם הבינה המלאכותית.</div>
     </div>
 
     <div id="input-container">
-        <input type="text" id="user-input" placeholder="Type your prompt here..." onkeydown="if(event.key === 'Enter') sendMessage()">
-        <button onclick="sendMessage()">Send</button>
+        <input type="text" id="user-input" placeholder="הקלד את ההודעה שלך כאן..." onkeydown="if(event.key === 'Enter') sendMessage()">
+        <button onclick="sendMessage()">שלח</button>
     </div>
 
     <script>
-        // Your API Key configured directly
-        const API_KEY = "AQ.Ab8RN6LRZYfiLtn8IvoyZbmFkICXldWq0T7O5iYRqJgRUCx68w";
+        // הגדרות הגישה החדשות
+        const API_KEY = "bgs_live_1ee39ea97e4f175c2c6b4ac63490220f377d43775a56ac30";
+        const API_BASE_URL = "https://birgsol-gh.davidyosef2102014.workers.dev/v1";
 
         async function sendMessage() {
             const inputField = document.getElementById('user-input');
@@ -118,7 +119,7 @@
 
             if (!userText) return;
 
-            // Append User Message
+            // הצגת הודעת המשתמש
             const userMsgDiv = document.createElement('div');
             userMsgDiv.className = 'message user-message';
             userMsgDiv.textContent = userText;
@@ -127,32 +128,38 @@
             inputField.value = '';
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
-            // Append Loading AI Message
+            // הודעת טעינה
             const aiMsgDiv = document.createElement('div');
             aiMsgDiv.className = 'message ai-message';
-            aiMsgDiv.textContent = 'Thinking...';
+            aiMsgDiv.textContent = 'חושב...';
             chatContainer.appendChild(aiMsgDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
             try {
-                // Example structure for API fetch (Adjust URL/body structure based on your specific API provider)
-                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + API_KEY, {
+                // ביצוע קריאת ה-API לכתובת ה-Worker שהגדרת
+                const response = await fetch(API_BASE_URL + '/chat/completions', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + API_KEY
+                    },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: userText }] }]
+                        model: "gpt-4o", // או שם המודל הנתמך בשרת שלך
+                        messages: [{ role: "user", content: userText }]
                     })
                 });
 
                 const data = await response.json();
                 
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    aiMsgDiv.textContent = data.candidates[0].content.parts[0].text;
+                if (data.choices && data.choices[0].message && data.choices[0].message.content) {
+                    aiMsgDiv.textContent = data.choices[0].message.content;
+                } else if (data.error) {
+                    aiMsgDiv.textContent = "שגיאה מהשרת: " + (data.error.message || JSON.stringify(data.error));
                 } else {
-                    aiMsgDiv.textContent = "Error: Received unexpected response format from API.";
+                    aiMsgDiv.textContent = "תשובה התקבלה במבנה לא צפוי.";
                 }
             } catch (error) {
-                aiMsgDiv.textContent = "Error connecting to AI service: " + error.message;
+                aiMsgDiv.textContent = "שגיאת תקשורת מול השרת: " + error.message;
             }
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
