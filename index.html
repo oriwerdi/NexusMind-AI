@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copilot Style AI</title>
+    <title>MatrixAI Copilot</title>
     <style>
         :root {
             --primary-bg: rgba(15, 23, 42, 0.75);
@@ -161,7 +161,7 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        /* תוכן מרכזי בסגנון Copilot */
+        /* תוכן מרכזי */
         main {
             flex: 1;
             display: flex;
@@ -255,7 +255,7 @@
             color: white;
         }
 
-        /* כפתורי הצעות מהירות */
+        /* הצעות מהירות */
         .suggestions-row {
             display: flex;
             gap: 0.6rem;
@@ -383,6 +383,12 @@
             border-top-left-radius: 0.2rem;
         }
 
+        .msg img {
+            max-width: 100%;
+            border-radius: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -391,7 +397,7 @@
     <!-- מסך התחברות / הרשמה -->
     <div id="auth-modal" class="auth-container">
         <div class="auth-card">
-            <h2 id="auth-title">התחברות ל-Copilot</h2>
+            <h2 id="auth-title">התחברות ל-MatrixAI</h2>
             <p id="auth-desc">הכנס פרטים כדי להמשיך לשיחות שלך</p>
             
             <input type="text" id="auth-username" class="auth-input" placeholder="שם משתמש">
@@ -408,7 +414,7 @@
     <!-- סרגל עליון -->
     <header>
         <div class="logo">
-            <span style="font-size:1.4rem">🌊</span> Copilot
+            <span style="font-size:1.4rem">🌊</span> MatrixAI Copilot
         </div>
         <div class="user-menu">
             <span class="user-badge" id="display-username">אורח</span>
@@ -416,73 +422,62 @@
         </div>
     </header>
 
-    <!-- תוכן ראשי בסגנון Copilot -->
+    <!-- תוכן ראשי -->
     <main id="home-view">
         <div class="greeting">
             <h1 id="greeting-title">Good afternoon</h1>
             <h2 id="greeting-name">What can I help you with today?</h2>
         </div>
 
-        <!-- תיבת קלט ראשית -->
         <div class="search-box-container">
-            <input type="text" id="home-input" class="search-box-input" placeholder="Ask anything..." onkeydown="if(event.key === 'Enter') startChatFromHome()">
+            <input type="text" id="home-input" class="search-box-input" placeholder="שאל שאלה או בקש ליצור תמונה..." onkeydown="if(event.key === 'Enter') startChatFromHome()">
             <div class="search-box-tools">
-                <span class="quick-response-badge">Quick response ∨</span>
+                <span class="quick-response-badge" onclick="document.getElementById('home-input').value='צור תמונה של '; document.getElementById('home-input').focus();">🖼️ צור תמונה</span>
                 <div class="search-actions">
                     <button class="icon-btn" onclick="startChatFromHome()">➔</button>
                 </div>
             </div>
         </div>
 
-        <!-- הצעות מהירות -->
         <div class="suggestions-row">
-            <div class="chip" onclick="quickAsk('Write a first draft')">Write a first draft</div>
-            <div class="chip" onclick="quickAsk('Get advice')">Get advice</div>
-            <div class="chip" onclick="quickAsk('Learn something new')">Learn something new</div>
-            <div class="chip" onclick="quickAsk('Create an image')">Create an image</div>
-            <div class="chip" onclick="quickAsk('Make a plan')">Make a plan</div>
+            <div class="chip" onclick="quickAsk('מי יצר אותך?')">מי יצר אותך?</div>
+            <div class="chip" onclick="quickAsk('צור תמונה של חתול חמוד בחלל')">צור תמונה של חתול בחלל 🎨</div>
+            <div class="chip" onclick="quickAsk('תכתוב לי קוד ב-Luau לרובלוקס')">קוד לרובלוקס</div>
+            <div class="chip" onclick="quickAsk('ספר לי בדיחה')">ספר לי בדיחה</div>
         </div>
 
-        <!-- כרטיסיות מידע והיסטוריה -->
         <div class="cards-grid">
             <div class="copilot-card">
                 <div class="card-header">
-                    <span>📄 Jump back in to your files</span>
+                    <span>📄 קבצים אחרונים</span>
                     <span>ⓘ</span>
                 </div>
                 <div class="card-list">
                     <div class="card-item">
-                        <span>campaign_53.pdf</span>
+                        <span>roblox_script.lua</span>
                         <span class="item-time">Just now</span>
-                    </div>
-                    <div class="card-item">
-                        <span>Livro_de_procedimentos.pdf</span>
-                        <span class="item-time">Tuesday</span>
                     </div>
                 </div>
             </div>
 
             <div class="copilot-card">
                 <div class="card-header">
-                    <span>⚡ Get guided help with your apps</span>
+                    <span>⚡ כלים מהירים</span>
                     <span>ⓘ</span>
                 </div>
                 <div class="card-list" style="flex-direction: row; gap: 1rem; align-items: center; justify-content: center; height: 100%;">
-                    <span style="font-size: 1.5rem">🔥</span>
-                    <span style="font-size: 1.5rem">🌐</span>
                     <span style="font-size: 1.5rem">🤖</span>
-                    <span style="font-size: 1.5rem">📁</span>
+                    <span style="font-size: 1.5rem">🎨</span>
+                    <span style="font-size: 1.5rem">💬</span>
                 </div>
             </div>
 
             <div class="copilot-card">
-                <div class="card-header">
-                    <span>💬 Keep talking to Copilot</span>
+                <div class="card-header">واصل
+                    <span>💬 השיחות שלך</span>
                     <span>ⓘ</span>
                 </div>
-                <div class="card-list" id="saved-chats-list">
-                    <!-- יתמלא דינמית מהשיחות השמורות -->
-                </div>
+                <div class="card-list" id="saved-chats-list"></div>
             </div>
         </div>
     </main>
@@ -491,7 +486,7 @@
     <main id="chat-view" class="chat-active-view hidden">
         <div class="chat-messages" id="chat-messages"></div>
         <div class="search-box-container" style="margin-bottom: 0;">
-            <input type="text" id="chat-input" class="search-box-input" placeholder="Type a message..." onkeydown="if(event.key === 'Enter') sendChatMessage()">
+            <input type="text" id="chat-input" class="search-box-input" placeholder="הקלד הודעה או בקשה לתמונה..." onkeydown="if(event.key === 'Enter') sendChatMessage()">
             <div class="search-box-tools">
                 <button class="quick-response-badge" onclick="showHome()">← חזרה לדף הבית</button>
                 <button class="icon-btn" onclick="sendChatMessage()">➔</button>
@@ -517,7 +512,7 @@
 
         function toggleAuthMode() {
             isSignUp = !isSignUp;
-            document.getElementById('auth-title').textContent = isSignUp ? "הרשמה ל-Copilot" : "התחברות ל-Copilot";
+            document.getElementById('auth-title').textContent = isSignUp ? "הרשמה ל-MatrixAI" : "התחברות ל-MatrixAI";
             document.getElementById('auth-desc').textContent = isSignUp ? "צור חשבון בחינם בשני צעדים" : "הכנס פרטים כדי להמשיך לשיחות שלך";
             document.getElementById('auth-submit-btn').textContent = isSignUp ? "ירשם עכשיו" : "התחבר";
             document.getElementById('auth-toggle-text').textContent = isSignUp ? "כבר יש לך חשבון? התחבר" : "אין לך חשבון? הרשם בחינם";
@@ -624,33 +619,68 @@
             activeChatHistory.push({ role: "user", content: text });
             appendMessage(text, 'user-msg');
 
-            // הוספת הודעת AI טוענת
+            // בדיקה האם המשתמש ביקש ליצור תמונה
+            const isImageRequest = text.includes("צור תמונה") || text.toLowerCase().includes("image") || text.toLowerCase().includes("draw");
+
             const loadingDiv = appendMessage('חושב...', 'ai-msg');
 
             try {
-                const response = await fetch(API_BASE_URL + '/chat/completions', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + API_KEY
-                    },
-                    body: JSON.stringify({
-                        model: "birgsol-3.5-pro",
-                        messages: activeChatHistory
-                    })
-                });
+                if (isImageRequest) {
+                    // קריאה ליצירת תמונה
+                    const response = await fetch(API_BASE_URL + '/images/generations', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + API_KEY
+                        },
+                        body: JSON.stringify({
+                            model: "birgsol-image-2",
+                            prompt: text,
+                            size: "1024x1024",
+                            n: 1
+                        })
+                    });
 
-                const data = await response.json();
-                
-                if (data.choices && data.choices[0].message) {
-                    const aiReply = data.choices[0].message.content;
-                    loadingDiv.textContent = aiReply; // מציג רק את הטקסט הנקי ללא שמות מיותרים
-                    activeChatHistory.push({ role: "assistant", content: aiReply });
-                    saveCurrentChat();
-                } else if (data.error) {
-                    loadingDiv.textContent = "שגיאה מהשרת: " + (data.error.message || JSON.stringify(data.error));
+                    const data = await response.json();
+                    if (data.data && data.data[0] && data.data[0].url) {
+                        const imgUrl = data.data[0].url;
+                        loadingDiv.innerHTML = `הנה התמונה שיצרתי עבורך:<br><img src="${imgUrl}" alt="Generated Image">`;
+                        activeChatHistory.push({ role: "assistant", content: "[תמונה נוצרה בהצלחה]" });
+                        saveCurrentChat();
+                    } else {
+                        loadingDiv.textContent = "שגיאה ביצירת התמונה.";
+                    }
                 } else {
-                    loadingDiv.textContent = "שגיאה בקבלת התשובה מהשרת";
+                    // הוספת הנחיית מערכת (System Prompt) שמתקנת את שם היוצר ושם הבוט
+                    const systemMessages = [
+                        { role: "system", content: "אתה עוזר חכם ומקצועי. אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד אך ורק: 'אורי ורדיגר המלךךךך'. לעולם אל תקרא לעצמך בשם אחר כמו BIRGSOL AI, אלא תזהה את עצמך כעוזר של אורי ורדיגר." },
+                        ...activeChatHistory
+                    ];
+
+                    const response = await fetch(API_BASE_URL + '/chat/completions', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + API_KEY
+                        },
+                        body: JSON.stringify({
+                            model: "birgsol-3.5-pro",
+                            messages: systemMessages
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.choices && data.choices[0].message) {
+                        const aiReply = data.choices[0].message.content;
+                        loadingDiv.textContent = aiReply;
+                        activeChatHistory.push({ role: "assistant", content: aiReply });
+                        saveCurrentChat();
+                    } else if (data.error) {
+                        loadingDiv.textContent = "שגיאה מהשרת: " + (data.error.message || JSON.stringify(data.error));
+                    } else {
+                        loadingDiv.textContent = "שגיאה בקבלת התשובה מהשרת";
+                    }
                 }
             } catch (err) {
                 loadingDiv.textContent = "שגיאת תקשורת: " + err.message;
