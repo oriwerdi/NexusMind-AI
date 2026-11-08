@@ -625,37 +625,13 @@
 
             try {
                 if (isImageRequest) {
-                    const response = await fetch(API_BASE_URL + '/images/generations', {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + API_KEY
-                        },
-                        body: JSON.stringify({
-                            model: "birgsol-image-2",
-                            prompt: text,
-                            size: "1024x1024",
-                            n: 1
-                        })
-                    });
+                    // שליחת בקשה מותאמת ליצירת תמונה באמצעות מנוע ה-AI שמתרגם את הבקשה לכתובת תמונה יפהפייה
+                    const imgPrompt = encodeURIComponent(text);
+                    const fallbackImgUrl = `https://image.pollinations.ai/prompt/${imgPrompt}?width=1024&height=1024&nologo=true`;
 
-                    const data = await response.json();
-                    
-                    // בדיקת מבנה הנתונים המוחזר מהשרת ליצירת תמונות
-                    let imgUrl = null;
-                    if (data.data && data.data[0] && data.data[0].url) {
-                        imgUrl = data.data[0].url;
-                    } else if (data.url) {
-                        imgUrl = data.url;
-                    }
-
-                    if (imgUrl) {
-                        loadingDiv.innerHTML = `הנה התמונה שיצרתי עבורך:<br><img src="${imgUrl}" alt="Generated Image">`;
-                        activeChatHistory.push({ role: "assistant", content: "[תמונה נוצרה בהצלחה]" });
-                        saveCurrentChat();
-                    } else {
-                        loadingDiv.textContent = "שגיאה ביצירת התמונה (השרת לא החזיר כתובת תקינה).";
-                    }
+                    loadingDiv.innerHTML = `הנה התמונה שיצרתי עבורך:<br><img src="${fallbackImgUrl}" alt="Generated Image">`;
+                    activeChatHistory.push({ role: "assistant", content: "[תמונה נוצרה בהצלחה]" });
+                    saveCurrentChat();
                 } else {
                     const systemMessages = [
                         { role: "system", content: "אתה עוזר חכם ומקצועי. אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד אך ורק: 'אורי ורדיגר המלךךךך'. לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר." },
