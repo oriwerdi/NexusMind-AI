@@ -390,6 +390,24 @@
             display: block;
         }
 
+        .download-btn {
+            display: inline-block;
+            margin-top: 0.6rem;
+            background: var(--accent);
+            color: #0f172a;
+            padding: 0.4rem 0.9rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .download-btn:hover {
+            background: #7dd3fc;
+        }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -625,11 +643,19 @@
 
             try {
                 if (isImageRequest) {
-                    // שליחת בקשה מותאמת ליצירת תמונה באמצעות מנוע ה-AI שמתרגם את הבקשה לכתובת תמונה יפהפייה
-                    const imgPrompt = encodeURIComponent(text);
-                    const fallbackImgUrl = `https://image.pollinations.ai/prompt/${imgPrompt}?width=1024&height=1024&nologo=true`;
+                    // הוספת מספר אקראי (seed) כדי שכל תמונה תצא ייחודית ושונה
+                    const randomSeed = Math.floor(Math.random() * 1000000);
+                    const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
+                    const encodedPrompt = encodeURIComponent(cleanPrompt || text);
+                    const imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${randomSeed}&nologo=true`;
 
-                    loadingDiv.innerHTML = `הנה התמונה שיצרתי עבורך:<br><img src="${fallbackImgUrl}" alt="Generated Image">`;
+                    // יצירת תמונה עם כפתור הורדה מובנה
+                    loadingDiv.innerHTML = `
+                        הנה התמונה שיצרתי עבורך:<br>
+                        <img src="${imgUrl}" alt="Generated Image" crossorigin="anonymous">
+                        <br>
+                        <a href="${imgUrl}" target="_blank" download="matrixai-image.jpg" class="download-btn">הורד תמונה 💾</a>
+                    `;
                     activeChatHistory.push({ role: "assistant", content: "[תמונה נוצרה בהצלחה]" });
                     saveCurrentChat();
                 } else {
