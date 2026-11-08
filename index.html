@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MatrixAI Copilot (Secure)</title>
+    <title>MatrixAI Copilot</title>
     <style>
         :root {
             --primary-bg: rgba(15, 23, 42, 0.75);
@@ -35,7 +35,7 @@
             overflow: hidden;
         }
 
-        /* מסכי התחברות והגדרת מפתח */
+        /* מסכי התחברות והרשמה */
         .auth-container {
             position: fixed;
             inset: 0;
@@ -53,7 +53,7 @@
             padding: 2.5rem;
             border-radius: 1.5rem;
             width: 100%;
-            max-width: 420px;
+            max-width: 400px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             text-align: center;
         }
@@ -413,17 +413,16 @@
 </head>
 <body>
 
-    <!-- מסך התחברות והזנת מפתח API מאובטח -->
+    <!-- מסך התחברות / הרשמה רגיל -->
     <div id="auth-modal" class="auth-container">
         <div class="auth-card">
             <h2 id="auth-title">התחברות ל-MatrixAI</h2>
-            <p id="auth-desc">הכנס שם משתמש, סיסמה ומפתח Google API (יישמר רק אצלך בדפדפן)</p>
+            <p id="auth-desc">הכנס פרטים כדי להתחיל לדבר</p>
             
             <input type="text" id="auth-username" class="auth-input" placeholder="שם משתמש">
             <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה">
-            <input type="password" id="auth-apikey" class="auth-input" placeholder="Google Gemini API Key (AIza...)">
             
-            <button class="auth-btn" onclick="handleAuth()" id="auth-submit-btn">התחבר והתחל</button>
+            <button class="auth-btn" onclick="handleAuth()" id="auth-submit-btn">התחבר</button>
             
             <div class="auth-toggle">
                 <span id="auth-toggle-text" onclick="toggleAuthMode()">אין לך חשבון? הרשם בחינם</span>
@@ -434,7 +433,7 @@
     <!-- סרגל עליון -->
     <header>
         <div class="logo">
-            <span style="font-size:1.4rem">🌊</span> MatrixAI Copilot (Secure)
+            <span style="font-size:1.4rem">🌊</span> MatrixAI Copilot
         </div>
         <div class="user-menu">
             <span class="user-badge" id="display-username">אורח</span>
@@ -515,6 +514,10 @@
     </main>
 
     <script>
+        // מפתח ה-API המרכזי ששמת (עובד אוטומטית לכל מי שמשתמש באתר)
+        const GEMINI_API_KEY = "AQ.Ab8RN6LUYGzoFmncWG6IkmrKb2C7Ov8BcIDDsitymBaV1089Ag";
+        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
+
         let isSignUp = false;
         let currentUser = null;
         let activeChatHistory = [];
@@ -530,7 +533,7 @@
         function toggleAuthMode() {
             isSignUp = !isSignUp;
             document.getElementById('auth-title').textContent = isSignUp ? "הרשמה ל-MatrixAI" : "התחברות ל-MatrixAI";
-            document.getElementById('auth-desc').textContent = isSignUp ? "הכנס פרטים ומפתח API אישי" : "הכנס פרטים כדי להמשיך לשיחות שלך";
+            document.getElementById('auth-desc').textContent = isSignUp ? "צור חשבון בחינם בשני צעדים" : "הכנס פרטים כדי להתחיל לדבר";
             document.getElementById('auth-submit-btn').textContent = isSignUp ? "ירשם עכשיו" : "התחבר";
             document.getElementById('auth-toggle-text').textContent = isSignUp ? "כבר יש לך חשבון? התחבר" : "אין לך חשבון? הרשם בחינם";
         }
@@ -538,7 +541,6 @@
         function handleAuth() {
             const username = document.getElementById('auth-username').value.trim();
             const password = document.getElementById('auth-password').value.trim();
-            const apiKeyInput = document.getElementById('auth-apikey').value.trim();
 
             if (!username || !password) {
                 alert("אנא מלא שם משתמש וסיסמה");
@@ -548,24 +550,16 @@
             let users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
 
             if (isSignUp) {
-                if (!apiKeyInput) {
-                    alert("אנא הכנס את מפתח ה-API שלך מ-Google AI Studio בהרשמה הראשונה");
-                    return;
-                }
                 if (users[username]) {
                     alert("שם המשתמש כבר קיים!");
                     return;
                 }
-                users[username] = { password: password, apiKey: apiKeyInput, chats: [] };
+                users[username] = { password: password, chats: [] };
                 localStorage.setItem('copilot_users', JSON.stringify(users));
             } else {
                 if (!users[username] || users[username].password !== password) {
                     alert("שם משתמש או סיסמה שגויים");
                     return;
-                }
-                if (apiKeyInput) {
-                    users[username].apiKey = apiKeyInput;
-                    localStorage.setItem('copilot_users', JSON.stringify(users));
                 }
             }
 
@@ -639,14 +633,6 @@
 
             if (!customText && input) input.value = '';
 
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-            const userApiKey = users[currentUser.username]?.apiKey;
-
-            if (!userApiKey) {
-                alert("לא נמצא מפתח API לחשבון זה. אנא התנתק והתחבר מחדש עם המפתח שלך.");
-                return;
-            }
-
             activeChatHistory.push({ role: "user", parts: [{ text: text }] });
             appendMessage(text, 'user-msg');
 
@@ -670,9 +656,6 @@
                     activeChatHistory.push({ role: "model", parts: [{ text: "[תמונה נוצרה בהצלחה]" }] });
                     saveCurrentChat();
                 } else {
-                    // עודכן למודל החדש והמומלץ gemini-3.8-flash לפי דרישת גוגל
-                    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${userApiKey}`;
-
                     const systemInstruction = {
                         role: "user",
                         parts: [{ text: "הנחיית מערכת חובה: אתה עוזר חכם. אם שואלים אותך מי יצר אותך או מי בנה אותך, תענה תמיד אך ורק: 'אורי ורדיגר המלךךךך'. אל תזכור שום ספק אחר." }]
@@ -684,7 +667,7 @@
 
                     const contentsArray = [systemInstruction, systemReplyInstruction, ...activeChatHistory];
 
-                    const response = await fetch(geminiUrl, {
+                    const response = await fetch(GEMINI_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contents: contentsArray })
@@ -700,11 +683,11 @@
                     } else if (data.error) {
                         loadingDiv.textContent = "שגיאה מגוגל: " + (data.error.message || JSON.stringify(data.error));
                     } else {
-                        loadingDiv.textContent = "שגיאה בקבלת התשובה מ-Gemini (בדוק את תקינות מפתח ה-API שלך)";
+                        loadingDiv.textContent = "שגיאה בקבלת התשובה מ-Gemini.";
                     }
                 }
             } catch (err) {
-                loadingDiv.textContent = "שגיאת תקשורת: " + err.message;
+                loadingDiv.textContent = "שגיאת תקשורת מול שרתי גוגל: " + err.message;
             }
         }
 
