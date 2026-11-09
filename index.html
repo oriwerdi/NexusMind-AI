@@ -793,7 +793,7 @@
         </div>
 
         <!-- אלמנט וידאו קופץ בלעדי (Jumpscare Overlay) - לחיצה סוגרת -->
-        <div id="jumpscare-container" class="jumpscare-overlay hidden" onclick="stopJumpscare()"></div>
+        <div id="jumpscare-container" class="jumpscare-overlay hidden"></div>
 
         <!-- סרגל עליון -->
         <header>
@@ -1430,6 +1430,7 @@
 
             container.innerHTML = '';
             container.classList.remove('hidden');
+            container.onclick = () => stopJumpscare();
 
             const ytId = getYouTubeId(url);
             if (ytId) {
@@ -1460,9 +1461,25 @@
                 container.appendChild(video);
 
                 video.play().catch(() => {
-                    // הדפדפן חסם סאונד - מנגנים בלי קול כדי לא להישאר עם מסך שחור
+                    // הדפדפן חסם סאונד כי המשתמש עוד לא לחץ על הדף -
+                    // מנגנים בלי קול, ולחיצה אחת על המסך מפעילה קול
                     video.muted = true;
                     video.play().catch(() => {});
+
+                    const hint = document.createElement('div');
+                    hint.textContent = '🔊 לחץ להפעלת קול';
+                    hint.style.cssText = 'position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);' +
+                        'background:rgba(0,0,0,0.7);color:white;padding:0.6rem 1.2rem;border-radius:2rem;' +
+                        'font-size:1rem;pointer-events:none;';
+                    container.appendChild(hint);
+
+                    container.onclick = () => {
+                        video.muted = false;
+                        video.currentTime = 0;
+                        video.play().catch(() => {});
+                        hint.remove();
+                        container.onclick = () => stopJumpscare();
+                    };
                 });
             }
 
