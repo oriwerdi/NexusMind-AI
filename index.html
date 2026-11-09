@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexusMind AI</title>
     
+    <!-- הוספת Favicon (אייקון בלשונית הדפדפן) -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    
     <style>
         :root {
             --primary-bg: rgba(15, 23, 42, 0.75);
@@ -47,56 +50,6 @@
             --accent: #0284c7;
             --accent-hover: #0369a1;
             --bg-gradient: linear-gradient(135deg, rgba(224, 242, 254, 0.85) 0%, rgba(240, 249, 255, 0.85) 100%);
-        }
-
-        /* מודאל ניהול (Admin Panel) */
-        .admin-card {
-            background: var(--card-bg);
-            border: 1px solid var(--accent);
-            padding: 1.5rem;
-            border-radius: 1.5rem;
-            width: 95%;
-            max-width: 650px;
-            box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
-            position: relative;
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .admin-users-list {
-            overflow-y: auto;
-            max-height: 200px;
-            margin-bottom: 1rem;
-            border: 1px solid var(--card-border);
-            border-radius: 0.5rem;
-            padding: 0.5rem;
-        }
-
-        .admin-user-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem;
-            background: rgba(15, 23, 42, 0.4);
-            margin-bottom: 0.4rem;
-            border-radius: 0.4rem;
-        }
-
-        .jumpscare-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background: black;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .jumpscare-overlay video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
         }
 
         * {
@@ -350,13 +303,6 @@
             font-size: 1.25rem;
             color: var(--text-main);
             letter-spacing: -0.3px;
-        }
-
-        .logo-img {
-            width: 26px;
-            height: 26px;
-            object-fit: contain;
-            border-radius: 6px;
         }
 
         .user-menu {
@@ -832,63 +778,17 @@
             </div>
         </div>
 
-        <!-- חלון ניהול ראשי (Admin Panel Modal) -->
-        <div id="admin-modal" class="modal-overlay hidden">
-            <div class="admin-card">
-                <button class="close-modal-btn" onclick="closeAdminModal()">✕</button>
-                <h2 style="color:var(--accent);">🛡️ לוח ניהול - Admin Panel</h2>
-                <p style="font-size:0.85rem; color:var(--text-muted);">שליטה בשיחות בזמן אמת והפעלת סרטונים על משתמשים</p>
-
-                <div class="admin-users-list" id="admin-active-chats">
-                    <!-- יטען דינמית -->
-                </div>
-
-                <!-- פתקית קישורים שמורים (Saved Video Notes) -->
-                <div style="background: rgba(15, 23, 42, 0.6); border: 1px dashed var(--accent); padding: 0.6rem 0.8rem; border-radius: 0.6rem; margin-bottom: 0.8rem; font-size: 0.8rem;">
-                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
-                        <span style="color:var(--accent); font-weight:bold;">📌 פתקית סרטונים שמורים (Saved Video Notes):</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:0.4rem 0.6rem; border-radius:0.4rem;">
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%; font-family:monospace;" id="saved-note-url">https://vlipsy.com/clips/3hEsFXt9</span>
-                        <button class="logout-btn" style="padding:0.2rem 0.5rem; font-size:0.75rem;" onclick="copySavedNoteUrl()">העתק קישור 📋</button>
-                    </div>
-                </div>
-
-                <div style="border-top:1px solid var(--card-border); padding-top:0.8rem; display:flex; flex-direction:column; gap:0.6rem;">
-                    <label style="font-size:0.85rem; text-align:right;" id="lbl-admin-target">שלח הודעת מנהל / כפה תשובה:</label>
-                    <input type="text" id="admin-override-input" class="profile-input" placeholder="הקלד הודעה שתופיע אצל המשתמש...">
-                    <button class="action-btn" onclick="sendAdminOverrideMsg()">שלח תשובת מנהל</button>
-
-                    <hr style="border-color:var(--card-border); margin:0.3rem 0;">
-
-                    <label style="font-size:0.85rem; text-align:right;">להוסיף קישור של סרטון להפעלה בלייב:</label>
-                    <input type="text" id="admin-video-url-input" class="profile-input" placeholder="הדבק קישור לסרטון (לדוגמה מהפתקית למעלה)...">
-                    <button class="action-btn btn-danger" onclick="triggerCustomVideoForSelected()">🎥 הפעל סרטון על המשתמש הנבחר</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- אלמנט וידאו קופץ בלעדי (Custom Video Overlay) -->
-        <div id="jumpscare-container" class="jumpscare-overlay hidden">
-            <video id="jumpscare-video" playsinline muted autoplay>
-                <source id="jumpscare-video-src" src="" type="video/mp4">
-            </video>
-            <iframe id="jumpscare-iframe" style="width:100%; height:100%; border:none; display:none;" allow="autoplay"></iframe>
-        </div>
-
         <!-- סרגל עליון -->
         <header>
             <div class="header-left">
                 <button id="btn-back-nav" class="back-nav-btn hidden" onclick="showHome()" title="Back / חזרה">←</button>
                 <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
                 <div class="logo">
-                    <img src="favicon.png" alt="NexusMind AI Logo" class="logo-img" onerror="this.style.display='none'; document.getElementById('fallback-logo-icon').style.display='inline-block';">
-                    <svg id="fallback-logo-icon" class="svg-icon" style="width:22px; height:22px; color:var(--accent); display:none;" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    <svg class="svg-icon" style="width:22px; height:22px; color:var(--accent);" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
                     <span>NexusMind AI</span>
                 </div>
             </div>
             <div class="user-menu">
-                <button id="btn-admin-panel" class="action-btn btn-warning hidden" style="width:auto; padding:0.4rem 0.8rem; margin:0;" onclick="openAdminModal()">🛡️ Admin Panel</button>
                 <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
                     <option value="ocean">אוקיינוס (Ocean)</option>
                     <option value="purple">סגול ניאון (Purple)</option>
@@ -957,24 +857,18 @@
         const API_KEY = "bgs_live_1ee39ea97e4f175c2c6b4ac63490220f377d43775a56ac30";
         const API_BASE_URL = "https://birgsol-gh.davidyosef2102014.workers.dev/v1";
 
-        let currentUser = null;
+        const themeVideos = {
+            ocean: "https://www.pexels.com/download/video/32132547/",
+            purple: "https://www.pexels.com/download/video/10754257/",
+            dark: "https://www.pexels.com/download/video/28561594/",
+            light: "https://www.pexels.com/download/video/29470941/"
+        };
+
         let isSignUp = false;
+        let currentUser = null;
         let activeChatHistory = [];
         let currentChatId = null;
         let currentLang = 'he';
-        let selectedAdminUser = null;
-
-        const creatorResponsesHe = [
-            "אני NexusMind AI, פותחתי על ידי צוות הפיתוח של NexusMind!",
-            "נוצרתי והורכבתי על ידי חברת NexusMind AI כדי לספק לך מענה חכם.",
-            "אני המודל המבוסס של NexusMind AI, שפותח במיוחד ע\"י NexusMind."
-        ];
-
-        const creatorResponsesEn = [
-            "I am NexusMind AI, developed by the NexusMind engineering team!",
-            "I was created and built by NexusMind AI to assist you intelligently.",
-            "I am NexusMind AI, developed natively by NexusMind."
-        ];
 
         const translations = {
             he: {
@@ -982,23 +876,24 @@
                 greetingSub: "במה אוכל לעזור לך היום?",
                 placeholderHome: "שאל שאלה או בקש ליצור תמונה...",
                 placeholderChat: "הקלד הודעה או בקשה לתמונה...",
-                logout: "התנתק",
                 createImg: "צור תמונה",
+                logout: "התנתק",
+                guest: "אורח",
+                loginTitle: "התחברות ל-NexusMind AI",
+                signUpTitle: "הרשמה ל-NexusMind AI",
+                loginDesc: "הכנס פרטים כדי להמשיך לשיחות שלך",
+                signUpDesc: "צור חשבון בחינם בשני צעדים",
+                loginBtn: "התחבר",
+                signUpBtn: "הירשם עכשיו",
+                noAccount: "אין לך חשבון? הרשם בחינם",
+                hasAccount: "כבר יש לך חשבון? התחבר",
+                recentChats: "השיחות האחרונות",
+                newChat: "שיחה חדשה",
+                noChats: "אין שיחות שמורות עדיין",
                 creatorQ: "מי יצר אותך?",
                 catQ: "חתול בחלל",
                 codeQ: "קוד לרובלוקס",
                 jokeQ: "ספר לי בדיחה",
-                newChat: "שיחה חדשה",
-                recentChats: "השיחות האחרונות",
-                noChats: "אין שיחות שמורות עדיין",
-                signUpTitle: "הרשמה ל-NexusMind AI",
-                signUpDesc: "צור חשבון חדש כדי לשמור את השיחות שלך",
-                loginTitle: "התחברות ל-NexusMind AI",
-                loginDesc: "הכנס פרטים כדי להמשיך לשיחות שלך",
-                signUpBtn: "צור חשבון",
-                loginBtn: "התחבר",
-                hasAccount: "כבר יש לך חשבון? התחבר כאן",
-                noAccount: "אין לך חשבון? הרשם בחינם",
                 profileTitle: "פרופיל משתמש",
                 profileDesc: "נהל את פרטי החשבון שלך ב-NexusMind",
                 lblChangeName: "שם משתמש חדש:",
@@ -1009,29 +904,30 @@
                 btnDelete: "מחק חשבון לצמיתות"
             },
             en: {
-                greeting: "Good afternoon",
+                greeting: "Good Afternoon",
                 greetingSub: "What can I help you with today?",
                 placeholderHome: "Ask a question or request an image...",
                 placeholderChat: "Type a message or request an image...",
-                logout: "Log out",
                 createImg: "Generate Image",
+                logout: "Log Out",
+                guest: "Guest",
+                loginTitle: "Login to NexusMind AI",
+                signUpTitle: "Sign Up for NexusMind AI",
+                loginDesc: "Enter your credentials to access your chats",
+                signUpDesc: "Create a free account in 2 simple steps",
+                loginBtn: "Log In",
+                signUpBtn: "Sign Up Now",
+                noAccount: "Don't have an account? Sign up free",
+                hasAccount: "Already have an account? Log in",
+                recentChats: "Recent Chats",
+                newChat: "New Chat",
+                noChats: "No saved chats yet",
                 creatorQ: "Who created you?",
                 catQ: "Cat in space",
-                codeQ: "Roblox Code",
+                codeQ: "Code for Roblox",
                 jokeQ: "Tell me a joke",
-                newChat: "New Chat",
-                recentChats: "Recent Chats",
-                noChats: "No saved chats yet",
-                signUpTitle: "Sign Up for NexusMind AI",
-                signUpDesc: "Create a new account to save your conversations",
-                loginTitle: "Login to NexusMind AI",
-                loginDesc: "Enter details to access your chats",
-                signUpBtn: "Create Account",
-                loginBtn: "Log In",
-                hasAccount: "Already have an account? Log in",
-                noAccount: "Don't have an account? Register free",
                 profileTitle: "User Profile",
-                profileDesc: "Manage your account details in NexusMind",
+                profileDesc: "Manage your NexusMind account details",
                 lblChangeName: "New Username:",
                 lblChangePass: "New Password:",
                 btnSaveName: "Update Username",
@@ -1041,112 +937,28 @@
             }
         };
 
-        const themeVideos = {
-            ocean: "https://assets.mixkit.co/videos/preview/mixkit-abstract-fast-line-motion-animation-43187-large.mp4",
-            purple: "https://assets.mixkit.co/videos/preview/mixkit-stars-in-space-background-1610-large.mp4",
-            dark: "https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-screens-31804-large.mp4",
-            light: "https://assets.mixkit.co/videos/preview/mixkit-clouds-and-blue-sky-2408-large.mp4"
-        };
+        const creatorResponsesHe = [
+            "אורי ורדיגר המלךךךך",
+            "אורי ורדיגר האגדי!",
+            "אורי ורדיגר התותח",
+            "אורי ורדיגר המאסטר הגדול",
+            "אורי ורדיגר המלך הבלתי מעורער!"
+        ];
+
+        const creatorResponsesEn = [
+            "Ori Vardiger the King!",
+            "The legendary Ori Vardiger!",
+            "Ori Vardiger the master creator!",
+            "Ori Vardiger the absolute legend!"
+        ];
 
         function changeLanguage(lang) {
             currentLang = lang;
             document.documentElement.lang = lang;
             document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
-
             const langSelect = document.getElementById('lang-select');
             if (langSelect) langSelect.value = lang;
-
-            localStorage.setItem('copilot_lang', lang);
             updateUI();
-        }
-
-        // קישור סרטון ברירת מחדל מהפתקית
-        let JUMPSCARE_VIDEO_URL = "https://vlipsy.com/clips/3hEsFXt9";
-
-        function copySavedNoteUrl() {
-            const urlText = document.getElementById('saved-note-url').textContent;
-            navigator.clipboard.writeText(urlText).then(() => {
-                alert("הקישור הועתק בהצלחה!");
-                document.getElementById('admin-video-url-input').value = urlText;
-            }).catch(() => {
-                document.getElementById('admin-video-url-input').value = urlText;
-                alert("הקישור הוכנס לתיבת הסרטון!");
-            });
-        }
-
-        function triggerCustomVideoForSelected() {
-            if (!selectedAdminUser) {
-                alert("בחר משתמש תחילה מהרשימה");
-                return;
-            }
-            const videoUrl = document.getElementById('admin-video-url-input').value.trim() || JUMPSCARE_VIDEO_URL;
-            
-            const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-            adminEvents[selectedAdminUser] = { type: 'custom_video', videoUrl: videoUrl, timestamp: Date.now() };
-            localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
-            alert(`סרטון הופעל בהצלחה עבור המשתמש: ${selectedAdminUser}`);
-        }
-
-        function checkAdminEvents() {
-            if (!currentUser) return;
-            setInterval(() => {
-                const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-                const myEvent = adminEvents[currentUser.username];
-                if (myEvent) {
-                    if (myEvent.type === 'msg') {
-                        appendMessage(myEvent.content, 'ai-msg');
-                        activeChatHistory.push({ role: "assistant", content: myEvent.content });
-                        saveCurrentChat();
-                    } else if (myEvent.type === 'custom_video' || myEvent.type === 'jumpscare') {
-                        playCustomVideo(myEvent.videoUrl || JUMPSCARE_VIDEO_URL);
-                    }
-                    delete adminEvents[currentUser.username];
-                    localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
-                }
-            }, 2000);
-        }
-
-        function playCustomVideo(videoUrl) {
-            const container = document.getElementById('jumpscare-container');
-            const video = document.getElementById('jumpscare-video');
-            const src = document.getElementById('jumpscare-video-src');
-            const iframe = document.getElementById('jumpscare-iframe');
-
-            if (!container) return;
-
-            container.classList.remove('hidden');
-
-            if (videoUrl.includes('vlipsy.com') || videoUrl.includes('youtube') || videoUrl.includes('embed')) {
-                // אם מדובר בקישור דף/איפרים כמו vlipsy
-                if (video) video.style.display = 'none';
-                if (iframe) {
-                    iframe.style.display = 'block';
-                    iframe.src = videoUrl.includes('embed') ? videoUrl : videoUrl + '/embed';
-                }
-            } else {
-                // קובץ MP4 ישיר
-                if (iframe) iframe.style.display = 'none';
-                if (video && src) {
-                    video.style.display = 'block';
-                    src.src = videoUrl;
-                    video.muted = false;
-                    video.load();
-                    
-                    const playPromise = video.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(() => {
-                            video.muted = true;
-                            video.play();
-                        });
-                    }
-                }
-            }
-
-            setTimeout(() => {
-                container.classList.add('hidden');
-                if (video) video.pause();
-                if (iframe) iframe.src = '';
-            }, 8000);
         }
 
         function updateUI() {
@@ -1296,25 +1108,15 @@
                 localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
                 setupUserSession();
             } else {
-                if (!users[username]) {
-                    // יצירה אוטומטית בהתחברות ראשונה (למשל oriwerdi)
-                    users[username] = { password: password, chats: [], status: 'active' };
-                    localStorage.setItem('copilot_users', JSON.stringify(users));
-                } else if (users[username].password !== password && username !== 'oriwerdi') {
+                if (!users[username] || users[username].password !== password) {
                     alert(currentLang === 'he' ? "שם משתמש או סיסמה שגויים" : "Invalid username or password");
                     return;
-                } else if (username === 'oriwerdi') {
-                    // עדכון סיסמה חלקה עבור חשבון הניהול
-                    users[username].password = password;
-                    localStorage.setItem('copilot_users', JSON.stringify(users));
                 }
-
                 if (users[username].status === 'suspended') {
                     users[username].status = 'active';
                     localStorage.setItem('copilot_users', JSON.stringify(users));
                     alert(currentLang === 'he' ? "החשבון שלך הופעל מחדש בהצלחה!" : "Your account has been reactivated successfully!");
                 }
-
                 currentUser = { username: username };
                 localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
                 setupUserSession();
@@ -1325,14 +1127,6 @@
             const authModal = document.getElementById('auth-modal');
             if (authModal) authModal.classList.add('hidden');
             
-            // בדיקת הרשאות מנהל oriwerdi
-            const adminBtn = document.getElementById('btn-admin-panel');
-            if (currentUser && currentUser.username === 'oriwerdi') {
-                if (adminBtn) adminBtn.classList.remove('hidden');
-            } else {
-                if (adminBtn) adminBtn.classList.add('hidden');
-            }
-
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
                 sidebar.classList.remove('hidden');
@@ -1348,120 +1142,7 @@
 
             const displayUserText = document.getElementById('user-badge-text');
             if (displayUserText) displayUserText.textContent = currentUser.username;
-            
-            checkAdminEvents();
             updateUI();
-        }
-
-        /* פונקציות ניהול (Admin Panel) */
-        function openAdminModal() {
-            if (!currentUser || currentUser.username !== 'oriwerdi') return;
-            const modal = document.getElementById('admin-modal');
-            if (modal) modal.classList.remove('hidden');
-            renderAdminUserList();
-        }
-
-        function closeAdminModal() {
-            const modal = document.getElementById('admin-modal');
-            if (modal) modal.classList.add('hidden');
-        }
-
-        function renderAdminUserList() {
-            const container = document.getElementById('admin-active-chats');
-            if (!container) return;
-            container.innerHTML = '';
-
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-            Object.keys(users).forEach(uname => {
-                if (uname === 'oriwerdi') return;
-                const row = document.createElement('div');
-                row.className = 'admin-user-row';
-                const chatsCount = (users[uname].chats || []).length;
-                row.innerHTML = `
-                    <span><strong>${uname}</strong> (${chatsCount} שיחות)</span>
-                    <button class="logout-btn" onclick="selectAdminTarget('${uname}')" style="background:${selectedAdminUser === uname ? 'var(--accent)' : 'transparent'}; color:${selectedAdminUser === uname ? '#0f172a' : 'var(--text-main)'}">
-                        ${selectedAdminUser === uname ? 'נבחר' : 'בחר'}
-                    </button>
-                `;
-                container.appendChild(row);
-            });
-        }
-
-        function selectAdminTarget(uname) {
-            selectedAdminUser = uname;
-            renderAdminUserList();
-        }
-
-        function sendAdminOverrideMsg() {
-            const text = document.getElementById('admin-override-input').value.trim();
-            if (!selectedAdminUser || !text) {
-                alert("בחר משתמש והזן טקסט לשליחה");
-                return;
-            }
-            const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-            adminEvents[selectedAdminUser] = { type: 'msg', content: text, timestamp: Date.now() };
-            localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
-            alert(`הודעה נשלחה בהצלחה למשתמש ${selectedAdminUser}`);
-            document.getElementById('admin-override-input').value = '';
-        }
-
-        function triggerJumpscareForSelected() {
-            if (!selectedAdminUser) {
-                alert("בחר משתמש תחילה");
-                return;
-            }
-            const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-            adminEvents[selectedAdminUser] = { type: 'jumpscare', timestamp: Date.now() };
-            localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
-            alert(`אפקט וידאו הופעל עבור ${selectedAdminUser}`);
-        }
-
-        function checkAdminEvents() {
-            if (!currentUser) return;
-            setInterval(() => {
-                const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-                const myEvent = adminEvents[currentUser.username];
-                if (myEvent) {
-                    if (myEvent.type === 'msg') {
-                        appendMessage(myEvent.content, 'ai-msg');
-                        activeChatHistory.push({ role: "assistant", content: myEvent.content });
-                        saveCurrentChat();
-                    } else if (myEvent.type === 'jumpscare') {
-                        playJumpscare();
-                    }
-                    delete adminEvents[currentUser.username];
-                    localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
-                }
-            }, 2000);
-        }
-
-        function playJumpscare() {
-            const container = document.getElementById('jumpscare-container');
-            const video = document.getElementById('jumpscare-video');
-            const src = document.getElementById('jumpscare-video-src');
-            if (container && video && src) {
-                src.src = JUMPSCARE_VIDEO_URL;
-                video.muted = false; // מנסה לנגן עם סאונד
-                video.load();
-                container.classList.remove('hidden');
-                
-                const playPromise = video.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        console.log("Autoplay with sound blocked, falling back to muted autoplay");
-                        video.muted = true; // אם הדפדפן חסם סאונד, מנגן מושתק כדי למנוע מסך שחור
-                        video.play();
-                    });
-                }
-                
-                video.onended = () => {
-                    container.classList.add('hidden');
-                };
-                setTimeout(() => {
-                    container.classList.add('hidden');
-                    video.pause();
-                }, 6000);
-            }
         }
 
         function logout() {
