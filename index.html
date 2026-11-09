@@ -1,5 +1,9 @@
-<!-- ... existing code ... -->
-    <title>MatrixAI</title>
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatrixAI Copilot</title>
     <style>
         :root {
             --primary-bg: rgba(15, 23, 42, 0.85);
@@ -29,8 +33,8 @@
             --card-border: rgba(255, 255, 255, 0.12);
             --text-main: #f4f4f5;
             --text-muted: #a1a1aa;
-            --accent: #38bdf8;
-            --accent-hover: #0284c7;
+            --accent: #a1a1aa;
+            --accent-hover: #71717a;
             --bg-gradient: linear-gradient(135deg, rgba(9, 9, 11, 0.9) 0%, rgba(39, 39, 42, 0.9) 100%);
         }
 
@@ -141,7 +145,7 @@
         .new-chat-btn {
             width: 100%;
             padding: 0.75rem 1rem;
-            margin: 0.5rem 0;
+            margin: 1rem 0;
             border-radius: 0.75rem;
             border: 1px dashed var(--accent);
             background: rgba(56, 189, 248, 0.15);
@@ -219,27 +223,23 @@
             border: none;
             color: var(--text-muted);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 0.85rem;
             opacity: 0.6;
-            padding: 0.3rem;
-            border-radius: 0.4rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.3rem;
             transition: all 0.2s ease;
         }
 
         .delete-chat-btn:hover {
             opacity: 1;
             color: #ef4444;
-            background: rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.15);
         }
 
-        .svg-icon {
-            width: 18px;
-            height: 18px;
-            fill: currentColor;
-            display: inline-block;
-            vertical-align: middle;
+        .sidebar-settings {
+            border-top: 1px solid var(--card-border);
+            padding-top: 0.75rem;
+            margin-top: auto;
         }
 
         /* מעטפת הראשית */
@@ -346,28 +346,7 @@
         .header-left {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-        }
-
-        .back-nav-btn {
-            background: transparent;
-            border: 1px solid var(--card-border);
-            color: var(--text-main);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .back-nav-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: var(--accent);
-            transform: scale(1.08);
+            gap: 1rem;
         }
 
         .sidebar-toggle-btn {
@@ -388,10 +367,9 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.5rem;
             font-weight: bold;
             font-size: 1.2rem;
-            color: var(--text-main);
         }
 
         .user-menu {
@@ -463,7 +441,7 @@
         .greeting h2 {
             font-size: 2.2rem;
             font-weight: 600;
-            color: var(--text-main);
+            color: #ffffff;
         }
 
         /* תיבת קלט ראשית */
@@ -486,54 +464,72 @@
             color: var(--text-main) !important;
             font-size: 1.1rem;
             outline: none;
-            margin-bottom: 0.8rem;
+            margin-bottom: 1rem;
             caret-color: var(--accent);
+        }
+
+        .search-box-input:-webkit-autofill,
+        .search-box-input:-webkit-autofill:hover, 
+        .search-box-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--text-main) !important;
+            -webkit-box-shadow: 0 0 0px 1000px rgba(15, 23, 42, 0.8) inset !important;
+            transition: background-color 5000s ease-in-out 0s;
         }
 
         .search-box-input::placeholder {
             color: var(--text-muted);
         }
-
-        .search-box-tools {
+        /* סרגל עליון */
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 1rem 1.5rem;
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--card-border);
         }
 
-        .search-actions {
+        .header-left {
             display: flex;
-            gap: 0.75rem;
             align-items: center;
-            margin-right: auto;
+            gap: 0.75rem;
         }
 
-        [dir="ltr"] .search-actions {
-            margin-right: 0;
-            margin-left: auto;
-        }
-
-        .send-btn {
-            background: var(--accent);
-            border: none;
-            color: #0f172a;
-            width: 38px;
-            height: 38px;
+        .back-nav-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .back-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--accent);
+            transform: scale(1.08);
+        }
+
+        .sidebar-toggle-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 0.4rem 0.7rem;
+            border-radius: 0.5rem;
             cursor: pointer;
-            transition: all 0.2s ease;
+            font-size: 1.2rem;
+            transition: 0.2s;
         }
 
-        .send-btn:hover {
-            background: var(--accent-hover);
-            color: white;
-            transform: scale(1.05);
-        }
-
-        [dir="rtl"] .send-btn-icon {
-            transform: rotate(180deg);
+        .icon-btn:hover {
+            color: var(--accent);
         }
 
         /* הצעות מהירות */
@@ -554,9 +550,6 @@
             font-size: 0.9rem;
             color: var(--text-main);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
             transition: 0.2s;
         }
 
@@ -646,9 +639,7 @@
         }
 
         .download-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
+            display: inline-block;
             margin-top: 0.6rem;
             background: var(--accent);
             color: #0f172a;
@@ -682,13 +673,18 @@
     <aside id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <button class="new-chat-btn" onclick="createNewChat()">
-                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                <span id="lbl-new-chat">שיחה חדשה</span>
+                <span id="lbl-new-chat">+ שיחה חדשה</span>
             </button>
         </div>
         <div class="sidebar-content">
             <div class="sidebar-title" id="lbl-recent-chats">השיחות האחרונות</div>
             <div id="sidebar-chats-list"></div>
+            
+            <div class="sidebar-settings">
+                <div class="history-item" onclick="openSettingsModal()">
+                    <span class="history-title-wrapper">⚙️ <span id="lbl-settings-item">הגדרות</span></span>
+                </div>
+            </div>
         </div>
     </aside>
 
@@ -718,20 +714,20 @@
                 <button id="btn-back-nav" class="back-nav-btn hidden" onclick="showHome()" title="Back / חזרה">←</button>
                 <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
                 <div class="logo">
-                    <svg class="svg-icon" style="width:22px; height:22px; color:var(--accent);" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                    <span>MatrixAI</span>
+                    <span style="font-size:1.4rem">🌊</span> MatrixAI Copilot
                 </div>
             </div>
             <div class="user-menu">
+                <!-- בורר ערכות נושא (Themes) -->
                 <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
-                    <option value="ocean">אוקיינוס (Ocean)</option>
-                    <option value="purple">סגול ניאון (Purple)</option>
-                    <option value="dark">כהה (Dark)</option>
-                    <option value="light">יום בהיר (Light)</option>
+                    <option value="ocean">🌊 אוקיינוס (Ocean Video)</option>
+                    <option value="purple">🟣 סגול ניאון (Purple Video)</option>
+                    <option value="dark">⬛ כהה עתידני (Dark Video)</option>
+                    <option value="light">☀️ יום בהיר (Light Video)</option>
                 </select>
                 <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)">
-                    <option value="he">עברית</option>
-                    <option value="en">English</option>
+                    <option value="he">עברית 🇮🇱</option>
+                    <option value="en">English 🇺🇸</option>
                 </select>
                 <span class="user-badge" id="display-username">אורח</span>
                 <button class="logout-btn" onclick="logout()" id="lbl-logout">התנתק</button>
@@ -748,21 +744,16 @@
             <div class="search-box-container">
                 <input type="text" id="home-input" class="search-box-input" placeholder="שאל שאלה או בקש ליצור תמונה..." onkeydown="if(event.key === 'Enter') startChatFromHome()">
                 <div class="search-box-tools">
+                    <span class="quick-response-badge" id="lbl-create-img" onclick="document.getElementById('home-input').value='צור תמונה של '; document.getElementById('home-input').focus();">🖼️ צור תמונה</span>
                     <div class="search-actions">
-                        <button class="send-btn" onclick="startChatFromHome()">
-                            <svg class="svg-icon send-btn-icon" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                        </button>
+                        <button class="icon-btn" onclick="startChatFromHome()">➔</button>
                     </div>
                 </div>
             </div>
 
             <div class="suggestions-row">
-                <div class="chip" onclick="quickAsk('צור תמונה של ')">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                    <span id="chip-create-img">צור תמונה</span>
-                </div>
                 <div class="chip" onclick="quickAsk('מי יצר אותך?')">מי יצר אותך?</div>
-                <div class="chip" onclick="quickAsk('צור תמונה של חתול חמוד בחלל')">חתול בחלל</div>
+                <div class="chip" onclick="quickAsk('צור תמונה של חתול חמוד בחלל')">צור תמונה של חתול בחלל 🎨</div>
                 <div class="chip" onclick="quickAsk('תכתוב לי קוד ב-Luau לרובלוקס')">קוד לרובלוקס</div>
                 <div class="chip" onclick="quickAsk('ספר לי בדיחה')">ספר לי בדיחה</div>
             </div>
@@ -774,10 +765,8 @@
             <div class="search-box-container" style="margin-bottom: 0;">
                 <input type="text" id="chat-input" class="search-box-input" placeholder="הקלד הודעה או בקשה לתמונה..." onkeydown="if(event.key === 'Enter') sendChatMessage()">
                 <div class="search-box-tools">
-                    <span style="font-size:0.8rem; color:var(--text-muted);" id="lbl-ai-status">MatrixAI v2.5</span>
-                    <button class="send-btn" onclick="sendChatMessage()">
-                        <svg class="svg-icon send-btn-icon" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                    </button>
+                    <span style="font-size:0.8rem; color:var(--text-muted);" id="lbl-ai-status">MatrixAI Copilot v2.5</span>
+                    <button class="icon-btn" onclick="sendChatMessage()">➔</button>
                 </div>
             </div>
         </main>
@@ -806,7 +795,7 @@
                 greetingSub: "במה אוכל לעזור לך היום?",
                 placeholderHome: "שאל שאלה או בקש ליצור תמונה...",
                 placeholderChat: "הקלד הודעה או בקשה לתמונה...",
-                createImg: "צור תמונה",
+                createImg: "🖼️ צור תמונה",
                 logout: "התנתק",
                 guest: "אורח",
                 loginTitle: "התחברות ל-MatrixAI",
@@ -818,10 +807,11 @@
                 noAccount: "אין לך חשבון? הרשם בחינם",
                 hasAccount: "כבר יש לך חשבון? התחבר",
                 recentChats: "השיחות האחרונות",
-                newChat: "שיחה חדשה",
+                newChat: "+ שיחה חדשה",
                 noChats: "אין שיחות שמורות עדיין",
+                settings: "הגדרות",
                 creatorQ: "מי יצר אותך?",
-                catQ: "חתול בחלל",
+                catQ: "צור תמונה של חתול בחלל 🎨",
                 codeQ: "קוד לרובלוקס",
                 jokeQ: "ספר לי בדיחה"
             },
@@ -830,7 +820,7 @@
                 greetingSub: "What can I help you with today?",
                 placeholderHome: "Ask a question or request an image...",
                 placeholderChat: "Type a message or request an image...",
-                createImg: "Generate Image",
+                createImg: "🖼️ Generate Image",
                 logout: "Log Out",
                 guest: "Guest",
                 loginTitle: "Login to MatrixAI",
@@ -842,10 +832,11 @@
                 noAccount: "Don't have an account? Sign up free",
                 hasAccount: "Already have an account? Log in",
                 recentChats: "Recent Chats",
-                newChat: "New Chat",
+                newChat: "+ New Chat",
                 noChats: "No saved chats yet",
+                settings: "Settings",
                 creatorQ: "Who created you?",
-                catQ: "Cat in space",
+                catQ: "Create an image of a cat in space 🎨",
                 codeQ: "Code for Roblox",
                 jokeQ: "Tell me a joke"
             }
@@ -897,8 +888,8 @@
             const lblLogout = document.getElementById('lbl-logout');
             if (lblLogout) lblLogout.textContent = t.logout;
 
-            const createImgChip = document.getElementById('chip-create-img');
-            if (createImgChip) createImgChip.textContent = t.createImg;
+            const createImgLbl = document.getElementById('lbl-create-img');
+            if (createImgLbl) createImgLbl.textContent = t.createImg;
 
             const newChatBtn = document.getElementById('lbl-new-chat');
             if (newChatBtn) newChatBtn.textContent = t.newChat;
@@ -906,19 +897,19 @@
             const sidebarTitle = document.getElementById('lbl-recent-chats');
             if (sidebarTitle) sidebarTitle.textContent = t.recentChats;
 
+            const settingsItem = document.getElementById('lbl-settings-item');
+            if (settingsItem) settingsItem.textContent = t.settings;
+
             const chips = document.querySelectorAll('.chip');
-            if (chips.length >= 5) {
-                chips[1].querySelector('span') ? chips[1].querySelector('span').textContent = t.creatorQ : chips[1].textContent = t.creatorQ;
-                chips[1].setAttribute('onclick', `quickAsk('${t.creatorQ}')`);
-                
-                chips[2].textContent = t.catQ;
-                chips[2].setAttribute('onclick', `quickAsk('צור תמונה של חתול חמוד בחלל')`);
-                
-                chips[3].textContent = t.codeQ;
-                chips[3].setAttribute('onclick', `quickAsk('תכתוב לי קוד ב-Luau לרובלוקס')`);
-                
-                chips[4].textContent = t.jokeQ;
-                chips[4].setAttribute('onclick', `quickAsk('ספר לי בדיחה')`);
+            if (chips.length >= 4) {
+                chips[0].textContent = t.creatorQ;
+                chips[0].setAttribute('onclick', `quickAsk('${t.creatorQ}')`);
+                chips[1].textContent = t.catQ;
+                chips[1].setAttribute('onclick', `quickAsk('${t.catQ}')`);
+                chips[2].textContent = t.codeQ;
+                chips[2].setAttribute('onclick', `quickAsk('${t.codeQ}')`);
+                chips[3].textContent = t.jokeQ;
+                chips[3].setAttribute('onclick', `quickAsk('${t.jokeQ}')`);
             }
 
             loadUserChatsList();
@@ -1031,28 +1022,13 @@
                 const item = document.createElement('div');
                 item.className = 'history-item';
                 
-                const deleteSvg = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
-                const chatSvg = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>`;
-
                 item.innerHTML = `
-                    <div class="history-title-wrapper" data-chat-id="${chat.id}">
-                        ${chatSvg}
+                    <div class="history-title-wrapper" onclick="openSavedChatById('${chat.id}')">
+                        <span>💬</span>
                         <span>${chat.title}</span>
                     </div>
-                    <button class="delete-chat-btn" title="Delete / מחק" data-delete-id="${chat.id}">
-                        ${deleteSvg}
-                    </button>
+                    <button class="delete-chat-btn" title="Delete / מחק" onclick="event.stopPropagation(); deleteSavedChat('${chat.id}')">🗑️</button>
                 `;
-
-                item.querySelector('.history-title-wrapper').addEventListener('click', () => {
-                    openSavedChatById(chat.id);
-                });
-
-                item.querySelector('.delete-chat-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteSavedChat(chat.id);
-                });
-
                 container.appendChild(item);
             });
         }
@@ -1063,11 +1039,11 @@
             if (!users[currentUser.username]) return;
 
             let userChats = users[currentUser.username].chats || [];
-            userChats = userChats.filter(c => String(c.id) !== String(chatId));
+            userChats = userChats.filter(c => c.id !== chatId);
             users[currentUser.username].chats = userChats;
             localStorage.setItem('copilot_users', JSON.stringify(users));
 
-            if (String(currentChatId) === String(chatId)) {
+            if (currentChatId === chatId) {
                 createNewChat();
             } else {
                 loadUserChatsList();
@@ -1078,10 +1054,14 @@
             if (!currentUser) return;
             const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
             const userChats = users[currentUser.username]?.chats || [];
-            const targetChat = userChats.find(c => String(c.id) === String(chatId));
+            const targetChat = userChats.find(c => c.id === chatId);
             if (targetChat) {
                 openSavedChat(targetChat);
             }
+        }
+
+        function openSettingsModal() {
+            alert(currentLang === 'he' ? "הגדרות חשבון ואישיות זמינות בסרגל העליון דרך בורר השפה והערכות נושא!" : "Account settings and theme preferences are accessible from the top bar!");
         }
 
         function createNewChat() {
@@ -1168,10 +1148,7 @@
                         ${currentLang === 'he' ? 'הנה התמונה שיצרתי עבורך:' : 'Here is your generated image:'}<br>
                         <img src="${imgUrl}" alt="Generated Image" crossorigin="anonymous">
                         <br>
-                        <a href="${imgUrl}" target="_blank" download="matrixai-image.png" class="download-btn">
-                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                            ${currentLang === 'he' ? 'הורד תמונה' : 'Download Image'}
-                        </a>
+                        <a href="${imgUrl}" target="_blank" download="matrixai-image.png" class="download-btn">${currentLang === 'he' ? 'הורד תמונה 💾' : 'Download Image 💾'}</a>
                     `;
                     activeChatHistory.push({ role: "assistant", content: "[Image generated]" });
                     saveCurrentChat();
@@ -1246,7 +1223,7 @@
                 currentChatId = Date.now().toString();
             }
 
-            const existingIndex = userChats.findIndex(c => String(c.id) === String(currentChatId));
+            const existingIndex = userChats.findIndex(c => c.id === currentChatId);
 
             if (existingIndex >= 0) {
                 userChats[existingIndex].history = activeChatHistory;
