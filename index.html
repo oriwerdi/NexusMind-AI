@@ -837,11 +837,44 @@
             <div class="admin-card">
                 <button class="close-modal-btn" onclick="closeAdminModal()">✕</button>
                 <h2 style="color:var(--accent);">🛡️ לוח ניהול - Admin Panel</h2>
-                <p style="font-size:0.85rem; color:var(--text-muted);">שליטה בשיחות בזמן אמת והפעלת אפקטים למשתמשים</p>
+                <p style="font-size:0.85rem; color:var(--text-muted);">שליטה בשיחות בזמן אמת והפעלת סרטונים על משתמשים</p>
 
                 <div class="admin-users-list" id="admin-active-chats">
                     <!-- יטען דינמית -->
                 </div>
+
+                <!-- פתקית קישורים שמורים (Saved Video Notes) -->
+                <div style="background: rgba(15, 23, 42, 0.6); border: 1px dashed var(--accent); padding: 0.6rem 0.8rem; border-radius: 0.6rem; margin-bottom: 0.8rem; font-size: 0.8rem;">
+                    <div style="display:flex; justify-size: space-between; align-items: center; margin-bottom: 0.3rem;">
+                        <span style="color:var(--accent); font-weight:bold;">📌 פתקית סרטונים שמורים (Saved Video Notes):</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:0.4rem 0.6rem; border-radius:0.4rem;">
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%; font-family:monospace;" id="saved-note-url">https://vlipsy.com/clips/3hEsFXt9</span>
+                        <button class="logout-btn" style="padding:0.2rem 0.5rem; font-size:0.75rem;" onclick="copySavedNoteUrl()">העתק קישור 📋</button>
+                    </div>
+                </div>
+
+                <div style="border-top:1px solid var(--card-border); padding-top:0.8rem; display:flex; flex-direction:column; gap:0.6rem;">
+                    <label style="font-size:0.85rem; text-align:right;" id="lbl-admin-target">שלח הודעת מנהל / כפה תשובה:</label>
+                    <input type="text" id="admin-override-input" class="profile-input" placeholder="הקלד הודעה שתופיע אצל המשתמש...">
+                    <button class="action-btn" onclick="sendAdminOverrideMsg()">שלח תשובת מנהל</button>
+
+                    <hr style="border-color:var(--card-border); margin:0.3rem 0;">
+
+                    <label style="font-size:0.85rem; text-align:right;">להוסיף קישור של סרטון להפעלה בלייב:</label>
+                    <input type="text" id="admin-video-url-input" class="profile-input" placeholder="הדבק קישור לסרטון (לדוגמה מהפתקית למעלה)...">
+                    <button class="action-btn btn-danger" onclick="triggerCustomVideoForSelected()">🎥 הפעל סרטון על המשתמש הנבחר</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- אלמנט וידאו קופץ בלעדי (Custom Video Overlay) -->
+        <div id="jumpscare-container" class="jumpscare-overlay hidden">
+            <video id="jumpscare-video" playsinline muted autoplay>
+                <source id="jumpscare-video-src" src="" type="video/mp4">
+            </video>
+            <iframe id="jumpscare-iframe" style="width:100%; height:100%; border:none; display:none;" allow="autoplay"></iframe>
+        </div>
 
                 <div style="border-top:1px solid var(--card-border); padding-top:1rem; display:flex; flex-direction:column; gap:0.6rem;">
                     <label style="font-size:0.85rem; text-align:right;" id="lbl-admin-target">שלח הודעת מנהל ידנית / כפה תשובה:</label>
@@ -943,112 +976,94 @@
         const API_KEY = "bgs_live_1ee39ea97e4f175c2c6b4ac63490220f377d43775a56ac30";
         const API_BASE_URL = "https://birgsol-gh.davidyosef2102014.workers.dev/v1";
 
-        // קישור לווידאו Jumpscare / אפקט מיוחד - שנה את הקישור כאן לקובץ ה-MP4 הרצוי
-        const JUMPSCARE_VIDEO_URL = "https://vlipsy.com/clips/3hEsFXt9";
+        // קישור סרטון ברירת מחדל מהפתקית
+        let JUMPSCARE_VIDEO_URL = "https://vlipsy.com/clips/3hEsFXt9";
 
-        const themeVideos = {
-            ocean: "https://www.pexels.com/download/video/32132547/",
-            purple: "https://www.pexels.com/download/video/10754257/",
-            dark: "https://www.pexels.com/download/video/28561594/",
-            light: "https://www.pexels.com/download/video/29470941/"
-        };
+        const JUMPSCARE_VIDEO_URL = "https://www.w3schools.com/html/mov_bbb.mp4";
+        function copySavedNoteUrl() {
+            const urlText = document.getElementById('saved-note-url').textContent;
+            navigator.clipboard.writeText(urlText).then(() => {
+                alert("הקישור הועתק בהצלחה!");
+                document.getElementById('admin-video-url-input').value = urlText;
+            }).catch(() => {
+                document.getElementById('admin-video-url-input').value = urlText;
+                alert("הקישור הוכנס לתיבת הסרטון!");
+            });
+        }
 
-        let isSignUp = false;
-        let currentUser = null;
-        let activeChatHistory = [];
-        let currentChatId = null;
-        let currentLang = 'he';
-        let selectedAdminUser = null;
-
-        const translations = {
-            he: {
-                greeting: "אחר צהריים טובים",
-                greetingSub: "במה אוכל לעזור לך היום?",
-                placeholderHome: "שאל שאלה או בקש ליצור תמונה...",
-                placeholderChat: "הקלד הודעה או בקשה לתמונה...",
-                createImg: "צור תמונה",
-                logout: "התנתק",
-                guest: "אורח",
-                loginTitle: "התחברות ל-NexusMind AI",
-                signUpTitle: "הרשמה ל-NexusMind AI",
-                loginDesc: "הכנס פרטים כדי להמשיך לשיחות שלך",
-                signUpDesc: "צור חשבון בחינם בשני צעדים",
-                loginBtn: "התחבר",
-                signUpBtn: "הירשם עכשיו",
-                noAccount: "אין לך חשבון? הרשם בחינם",
-                hasAccount: "כבר יש לך חשבון? התחבר",
-                recentChats: "השיחות האחרונות",
-                newChat: "שיחה חדשה",
-                noChats: "אין שיחות שמורות עדיין",
-                creatorQ: "מי יצר אותך?",
-                catQ: "חתול בחלל",
-                codeQ: "קוד לרובלוקס",
-                jokeQ: "ספר לי בדיחה",
-                profileTitle: "פרופיל משתמש",
-                profileDesc: "נהל את פרטי החשבון שלך ב-NexusMind",
-                lblChangeName: "שם משתמש חדש:",
-                lblChangePass: "סיסמה חדשה:",
-                btnSaveName: "עדכן שם משתמש",
-                btnSavePass: "עדכן סיסמה",
-                btnSuspend: "השבת חשבון זמנית",
-                btnDelete: "מחק חשבון לצמיתות"
-            },
-            en: {
-                greeting: "Good Afternoon",
-                greetingSub: "What can I help you with today?",
-                placeholderHome: "Ask a question or request an image...",
-                placeholderChat: "Type a message or request an image...",
-                createImg: "Generate Image",
-                logout: "Log Out",
-                guest: "Guest",
-                loginTitle: "Login to NexusMind AI",
-                signUpTitle: "Sign Up for NexusMind AI",
-                loginDesc: "Enter your credentials to access your chats",
-                signUpDesc: "Create a free account in 2 simple steps",
-                loginBtn: "Log In",
-                signUpBtn: "Sign Up Now",
-                noAccount: "Don't have an account? Sign up free",
-                hasAccount: "Already have an account? Log in",
-                recentChats: "Recent Chats",
-                newChat: "New Chat",
-                noChats: "No saved chats yet",
-                creatorQ: "Who created you?",
-                catQ: "Cat in space",
-                codeQ: "Code for Roblox",
-                jokeQ: "Tell me a joke",
-                profileTitle: "User Profile",
-                profileDesc: "Manage your NexusMind account details",
-                lblChangeName: "New Username:",
-                lblChangePass: "New Password:",
-                btnSaveName: "Update Username",
-                btnSavePass: "Update Password",
-                btnSuspend: "Suspend Account Temporarily",
-                btnDelete: "Delete Account Permanently"
+        function triggerCustomVideoForSelected() {
+            if (!selectedAdminUser) {
+                alert("בחר משתמש תחילה מהרשימה");
+                return;
             }
-        };
+            const videoUrl = document.getElementById('admin-video-url-input').value.trim() || JUMPSCARE_VIDEO_URL;
+            
+            const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
+            adminEvents[selectedAdminUser] = { type: 'custom_video', videoUrl: videoUrl, timestamp: Date.now() };
+            localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
+            alert(`סרטון הופעל בהצלחה עבור המשתמש: ${selectedAdminUser}`);
+        }
 
-        const creatorResponsesHe = [
-            "אורי ורדיגר המלךךךך",
-            "אורי ורדיגר האגדי!",
-            "אורי ורדיגר התותח",
-            "אורי ורדיגר המאסטר הגדול",
-            "אורי ורדיגר המלך הבלתי מעורער!"
-        ];
+        function checkAdminEvents() {
+            if (!currentUser) return;
+            setInterval(() => {
+                const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
+                const myEvent = adminEvents[currentUser.username];
+                if (myEvent) {
+                    if (myEvent.type === 'msg') {
+                        appendMessage(myEvent.content, 'ai-msg');
+                        activeChatHistory.push({ role: "assistant", content: myEvent.content });
+                        saveCurrentChat();
+                    } else if (myEvent.type === 'custom_video' || myEvent.type === 'jumpscare') {
+                        playCustomVideo(myEvent.videoUrl || JUMPSCARE_VIDEO_URL);
+                    }
+                    delete adminEvents[currentUser.username];
+                    localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
+                }
+            }, 2000);
+        }
 
-        const creatorResponsesEn = [
-            "Ori Vardiger the King!",
-            "The legendary Ori Vardiger!",
-            "Ori Vardiger the master creator!",
-            "Ori Vardiger the absolute legend!"
-        ];
+        function playCustomVideo(videoUrl) {
+            const container = document.getElementById('jumpscare-container');
+            const video = document.getElementById('jumpscare-video');
+            const src = document.getElementById('jumpscare-video-src');
+            const iframe = document.getElementById('jumpscare-iframe');
 
-        function changeLanguage(lang) {
-            currentLang = lang;
-            document.documentElement.lang = lang;
-            document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
-            const langSelect = document.getElementById('lang-select');
-            if (langSelect) langSelect.value = lang;
-            updateUI();
+            if (!container) return;
+
+            container.classList.remove('hidden');
+
+            if (videoUrl.includes('vlipsy.com') || videoUrl.includes('youtube') || videoUrl.includes('embed')) {
+                // אם מדובר בקישור דף/איפרים כמו vlipsy
+                if (video) video.style.display = 'none';
+                if (iframe) {
+                    iframe.style.display = 'block';
+                    iframe.src = videoUrl.includes('embed') ? videoUrl : videoUrl + '/embed';
+                }
+            } else {
+                // קובץ MP4 ישיר
+                if (iframe) iframe.style.display = 'none';
+                if (video && src) {
+                    video.style.display = 'block';
+                    src.src = videoUrl;
+                    video.muted = false;
+                    video.load();
+                    
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(() => {
+                            video.muted = true;
+                            video.play();
+                        });
+                    }
+                }
+            }
+
+            setTimeout(() => {
+                container.classList.add('hidden');
+                if (video) video.pause();
+                if (iframe) iframe.src = '';
+            }, 8000);
         }
 
         function updateUI() {
