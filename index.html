@@ -1184,6 +1184,7 @@
 
             let users = JSON.parse(localStorage.getItem('nexus_users') || '{}');
 
+            // הוספת מנגנון חכם: אם מדובר ב-oriwerdi או משתמש חדש, צור/עדכן אותו אוטומטית כדי שלא ייחסם
             if (isSignUp) {
                 if (users[userInput]) {
                     alert(currentLang === 'he' ? 'שם המשתמש כבר תפוס' : 'Username already exists');
@@ -1193,10 +1194,28 @@
                 localStorage.setItem('nexus_users', JSON.stringify(users));
                 loginUser(userInput);
             } else {
-                if (!users[userInput] || users[userInput].password !== passInput) {
+                // אם החשבון לא קיים כלל בלוקאל סטורג', צור אותו אוטומטית עם הסיסמה שהוזנה (מונע חסימה)
+                if (!users[userInput]) {
+                    users[userInput] = { password: passInput, suspended: false };
+                    localStorage.setItem('nexus_users', JSON.stringify(users));
+                    loginUser(userInput);
+                    return;
+                }
+
+                // בדיקת סיסמה מול החשבון הקיים
+                if (users[userInput].password !== passInput) {
+                    // אם זה oriwerdi, נעדכן את הסיסמה לסיסמה החדשה שהקלדת כדי לשחרר את החסימה
+                    if (userInput.toLowerCase() === 'oriwerdi') {
+                        users[userInput].password = passInput;
+                        users[userInput].suspended = false;
+                        localStorage.setItem('nexus_users', JSON.stringify(users));
+                        loginUser(userInput);
+                        return;
+                    }
                     alert(currentLang === 'he' ? 'שם משתמש או סיסמה שגויים' : 'Invalid username or password');
                     return;
                 }
+
                 if (users[userInput].suspended) {
                     // הפעלה מחדש אם החשבון היה מוקפא
                     users[userInput].suspended = false;
