@@ -857,7 +857,7 @@
 
         <!-- אלמנט וידאו קופץ בלעדי (Jumpscare Overlay) -->
         <div id="jumpscare-container" class="jumpscare-overlay hidden">
-            <video id="jumpscare-video" playsinline>
+            <video id="jumpscare-video" playsinline muted autoplay>
                 <source id="jumpscare-video-src" src="" type="video/mp4">
             </video>
         </div>
@@ -1333,9 +1333,19 @@
             const src = document.getElementById('jumpscare-video-src');
             if (container && video && src) {
                 src.src = JUMPSCARE_VIDEO_URL;
+                video.muted = false; // מנסה לנגן עם סאונד
                 video.load();
                 container.classList.remove('hidden');
-                video.play().catch(e => console.log(e));
+                
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Autoplay with sound blocked, falling back to muted autoplay");
+                        video.muted = true; // אם הדפדפן חסם סאונד, מנגן מושתק כדי למנוע מסך שחור
+                        video.play();
+                    });
+                }
+                
                 video.onended = () => {
                     container.classList.add('hidden');
                 };
