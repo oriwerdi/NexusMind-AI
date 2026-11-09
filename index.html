@@ -893,6 +893,7 @@
         let currentChatId = null;
         let currentLang = 'he';
         let selectedAdminUser = null;
+        let selectedAdminUid = null;
         let adminEventsInterval = null;
         let jumpscareTimer = null;
 
@@ -1090,8 +1091,7 @@
 
             const savedUser = localStorage.getItem('copilot_current_user');
             if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                setupUserSession();
+                restoreSession(savedUser);
             } else {
                 const sidebar = document.getElementById('sidebar');
                 if (sidebar) sidebar.classList.add('hidden');
@@ -1112,40 +1112,130 @@
             document.getElementById('auth-toggle-text').textContent = isSignUp ? t.hasAccount : t.noAccount;
         }
 
-        function handleAuth() {
+        /* ================= חשבונות (שמורים ב-Firebase) ================= */
+        let chatsCache = [];
+
+        function isAdmin() {
+            return !!currentUser && currentUser.email === ADMIN_EMAIL;
+        }
+
+
+
+        // גיבוב סיסמה (PBKDF2) - הסיסמה עצמה אף פעם לא נשמרת
+
+
+        async function fetchChats() {
+            if (!currentUser) return;
+            const obj = (await dbGet('chats/' + currentUser.uid)) || {};
+            chatsCache = Object.values(obj)
+                .filter(c => c && c.history)
+                .sort((a, b) => Number(a.id) - Number(b.id));
+        }
+
+        function startSession(username) {
+            currentUser = { username: username, uid: authState.uid, email: authState.email };
+            localStorage.setItem('copilot_current_user', JSON.stringify({ refreshToken: authState.refreshToken }));
+            setupUserSession();
+        }
+
+        async function restoreSession(raw) {
+            try {
+                const saved = JSON.parse(raw);
+                if (saved && saved.refreshToken) {
+                    authState = { refreshToken: saved.refreshToken, expiresAt: 0 };
+                    await refreshAuth();
+                    const acc = await dbGet('accounts/' + authState.uid);
+                    if (acc && acc.name && acc.status !== 'suspended') {
+                        currentUser = { username: acc.name, uid: authState.uid, email: authState.email };
+                        setupUserSession();
+                        return;
+                    }
+                }
+            } catch (e) {}
+            authState = null;
+            localStorage.removeItem('copilot_current_user');
+        }
+
+        async function handleAuth() {
             const username = document.getElementById('auth-username').value.trim();
             const password = document.getElementById('auth-password').value.trim();
+            const he = currentLang === 'he';
 
             if (!username || !password) {
-                alert(currentLang === 'he' ? "אנא מלא את כל השדות" : "Please fill in all fields");
+                alert(he ? "אנא מלא את כל השדות" : "Please fill in all fields");
+                return;
+            }
+            if (FIREBASE_API_KEY.indexOf('PASTE') === 0) {
+                alert("חסר Web API Key של Firebase בקוד (FIREBASE_API_KEY)");
                 return;
             }
 
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            const taken = he ? "שם המשתמש כבר קיים!" : "Username already exists!";
+            const invalid = he ? "שם משתמש או סיסמה שגויים" : "Invalid username or password";
+            const btn = document.getElementById('auth-submit-btn');
+            btn.disabled = true;
+            authState = null;
 
-            if (isSignUp) {
-                if (users[username]) {
-                    alert(currentLang === 'he' ? "שם המשתמש כבר קיים!" : "Username already exists!");
-                    return;
+            try {
+                const nameKey = userKey(username);
+                const rec = await dbGet('names/' + nameKey);   // רשימת השמות התפוסים (ציבורית לקריאה)
+
+                if (isSignUp) {
+                    if (rec) { alert(taken); return; }
+
+                    const email = await emailForName(username);
+                    let data;
+                    try {
+                        data = await authCall('signUp', { email: email, password: password, returnSecureToken: true });
+                    } catch (e) {
+                        if (String(e.message).includes('EMAIL_EXISTS')) { alert(taken); return; }
+                        if (String(e.message).includes('WEAK_PASSWORD')) {
+                            alert(he ? "הסיסמה חייבת להכיל לפחות 6 תווים" : "Password must be at least 6 characters");
+                            return;
+                        }
+                        throw e;
+                    }
+                    setAuth(data);
+
+                    try {
+                        await dbPut('names/' + nameKey, { uid: authState.uid, email: email, name: username });
+                        await dbPut('accounts/' + authState.uid, { name: username, status: 'active', createdAt: Date.now() });
+                    } catch (e) {
+                        // מישהו הספיק לתפוס את השם - מוחקים את החשבון שנוצר
+                        try { await authCall('delete', { idToken: authState.idToken }); } catch (e2) {}
+                        authState = null;
+                        alert(taken);
+                        return;
+                    }
+                    startSession(username);
+                } else {
+                    if (!rec) { alert(invalid); return; }
+
+                    let data;
+                    try {
+                        data = await authCall('signInWithPassword', { email: rec.email, password: password, returnSecureToken: true });
+                    } catch (e) {
+                        if (String(e.message).includes('TOO_MANY_ATTEMPTS')) {
+                            alert(he ? "יותר מדי ניסיונות, נסה שוב מאוחר יותר" : "Too many attempts, try again later");
+                        } else {
+                            alert(invalid);
+                        }
+                        return;
+                    }
+                    setAuth(data);
+
+                    const acc = await dbGet('accounts/' + authState.uid);
+                    if (acc && acc.status === 'suspended') {
+                        await dbPatch('accounts/' + authState.uid, { status: 'active' });
+                        alert(he ? "החשבון שלך הופעל מחדש בהצלחה!" : "Your account has been reactivated successfully!");
+                    }
+                    startSession((acc && acc.name) || rec.name);
                 }
-                users[username] = { password: password, chats: [], status: 'active' };
-                localStorage.setItem('copilot_users', JSON.stringify(users));
-                currentUser = { username: username };
-                localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
-                setupUserSession();
-            } else {
-                if (!users[username] || users[username].password !== password) {
-                    alert(currentLang === 'he' ? "שם משתמש או סיסמה שגויים" : "Invalid username or password");
-                    return;
-                }
-                if (users[username].status === 'suspended') {
-                    users[username].status = 'active';
-                    localStorage.setItem('copilot_users', JSON.stringify(users));
-                    alert(currentLang === 'he' ? "החשבון שלך הופעל מחדש בהצלחה!" : "Your account has been reactivated successfully!");
-                }
-                currentUser = { username: username };
-                localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
-                setupUserSession();
+            } catch (e) {
+                authState = null;
+                alert((he ? "שגיאת חיבור לשרת: " : "Server connection error: ") + e.message);
+            } finally {
+                btn.disabled = false;
             }
         }
 
@@ -1155,7 +1245,7 @@
 
             // בדיקת הרשאות מנהל oriwerdi
             const adminBtn = document.getElementById('btn-admin-panel');
-            if (currentUser && currentUser.username === 'oriwerdi') {
+            if (isAdmin()) {
                 if (adminBtn) adminBtn.classList.remove('hidden');
             } else {
                 if (adminBtn) adminBtn.classList.add('hidden');
@@ -1179,11 +1269,12 @@
 
             checkAdminEvents();
             updateUI();
+            fetchChats().then(loadUserChatsList).catch(() => {});
         }
 
         /* ================= פונקציות ניהול (Admin Panel) ================= */
         function openAdminModal() {
-            if (!currentUser || currentUser.username !== 'oriwerdi') return;
+            if (!isAdmin()) return;
             document.getElementById('admin-modal').classList.remove('hidden');
             document.getElementById('admin-jumpscare-url').value =
                 localStorage.getItem('nexus_jumpscare_url') || '';
@@ -1208,18 +1299,93 @@
 
         // מפתח בטוח ל-Firebase משם משתמש (אסור . $ # [ ] /)
         function userKey(name) {
-            return Array.from(new TextEncoder().encode(name))
+            return Array.from(new TextEncoder().encode(String(name).toLowerCase()))
                 .map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
+        /* ---------- Firebase Authentication (REST) ---------- */
+        // הדבק כאן את ה-Web API Key מ-Firebase: Project settings > General > Web API Key
+        const FIREBASE_API_KEY = "PASTE_YOUR_API_KEY_HERE";
+        const ADMIN_EMAIL = "86b99df42d7737c75cf82529f960fa304a3f717f@nexusmind.app";
+        let authState = null;   // { idToken, refreshToken, expiresAt, uid, email }
+
+        async function sha256Hex(text) {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // כל שם משתמש מקבל "אימייל" ייחודי נגזר משמו - Firebase לא מאפשר שני חשבונות עם אותו אימייל
+        async function emailForName(name) {
+            return (await sha256Hex(String(name).toLowerCase())).slice(0, 40) + '@nexusmind.app';
+        }
+
+        function parseJwt(token) {
+            return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        }
+
+        async function authCall(endpoint, body) {
+            const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:${endpoint}?key=${FIREBASE_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await r.json();
+            if (!r.ok) throw new Error((data.error && data.error.message) || ('HTTP ' + r.status));
+            return data;
+        }
+
+        function setAuth(data) {
+            authState = {
+                idToken: data.idToken,
+                refreshToken: data.refreshToken,
+                uid: data.localId || parseJwt(data.idToken).user_id,
+                email: parseJwt(data.idToken).email,
+                expiresAt: Date.now() + (Number(data.expiresIn) || 3600) * 1000
+            };
+            saveRefreshToken();
+        }
+
+        function saveRefreshToken() {
+            if (authState && localStorage.getItem('copilot_current_user')) {
+                localStorage.setItem('copilot_current_user', JSON.stringify({ refreshToken: authState.refreshToken }));
+            }
+        }
+
+        async function refreshAuth() {
+            const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(authState.refreshToken)
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error((d.error && d.error.message) || ('HTTP ' + r.status));
+            authState.idToken = d.id_token;
+            authState.refreshToken = d.refresh_token;
+            authState.uid = d.user_id;
+            authState.email = parseJwt(d.id_token).email;
+            authState.expiresAt = Date.now() + Number(d.expires_in) * 1000;
+            saveRefreshToken();
+        }
+
+        async function getIdToken() {
+            if (!authState) return null;
+            if (Date.now() > authState.expiresAt - 60000) await refreshAuth();
+            return authState.idToken;
+        }
+
+        async function dbUrl(path) {
+            const t = await getIdToken();
+            return `${DB_URL}/${path}.json` + (t ? '?auth=' + encodeURIComponent(t) : '');
+        }
+
         async function dbGet(path) {
-            const r = await fetch(`${DB_URL}/${path}.json`);
+            const r = await fetch(await dbUrl(path));
             if (!r.ok) throw new Error('HTTP ' + r.status);
             return r.json();
         }
 
         async function dbPut(path, data) {
-            const r = await fetch(`${DB_URL}/${path}.json`, {
+            const r = await fetch(await dbUrl(path), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -1228,15 +1394,25 @@
             return r.json();
         }
 
+        async function dbPatch(path, data) {
+            const r = await fetch(await dbUrl(path), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }
+
         async function dbDelete(path) {
-            const r = await fetch(`${DB_URL}/${path}.json`, { method: 'DELETE', keepalive: true });
+            const r = await fetch(await dbUrl(path), { method: 'DELETE', keepalive: true });
             if (!r.ok) throw new Error('HTTP ' + r.status);
         }
 
         // רושם את המשתמש ברשימה המשותפת כדי שהאדמין יראה אותו מכל מכשיר
         function registerPresence() {
             if (!currentUser) return;
-            dbPut('userlist/' + userKey(currentUser.username), {
+            dbPut('userlist/' + currentUser.uid, {
                 name: currentUser.username,
                 lastSeen: Date.now()
             }).catch(() => {});
@@ -1256,16 +1432,16 @@
             }
 
             container.innerHTML = '';
-            const entries = Object.values(list)
-                .filter(u => u && u.name && u.name !== 'oriwerdi')
-                .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+            const entries = Object.entries(list)
+                .filter(([uid, u]) => u && u.name && uid !== currentUser.uid)
+                .sort((a, b) => (b[1].lastSeen || 0) - (a[1].lastSeen || 0));
 
             if (!entries.length) {
                 container.textContent = 'אין משתמשים עדיין';
                 return;
             }
 
-            entries.forEach(u => {
+            entries.forEach(([uid, u]) => {
                 const row = document.createElement('div');
                 row.className = 'admin-user-row';
 
@@ -1277,31 +1453,33 @@
                 seen.textContent = u.lastSeen ? new Date(u.lastSeen).toLocaleString() : '';
                 label.append(strong, seen);
 
+                const chosen = selectedAdminUid === uid;
                 const btn = document.createElement('button');
                 btn.className = 'logout-btn';
-                btn.style.background = selectedAdminUser === u.name ? 'var(--accent)' : 'transparent';
-                btn.style.color = selectedAdminUser === u.name ? '#0f172a' : 'var(--text-main)';
-                btn.textContent = selectedAdminUser === u.name ? 'נבחר' : 'בחר';
-                btn.onclick = () => selectAdminTarget(u.name);
+                btn.style.background = chosen ? 'var(--accent)' : 'transparent';
+                btn.style.color = chosen ? '#0f172a' : 'var(--text-main)';
+                btn.textContent = chosen ? 'נבחר' : 'בחר';
+                btn.onclick = () => selectAdminTarget(uid, u.name);
 
                 row.append(label, btn);
                 container.appendChild(row);
             });
         }
 
-        function selectAdminTarget(uname) {
-            selectedAdminUser = uname;
+        function selectAdminTarget(uid, name) {
+            selectedAdminUid = uid;
+            selectedAdminUser = name;
             renderAdminUserList();
         }
 
         async function sendAdminOverrideMsg() {
             const text = document.getElementById('admin-override-input').value.trim();
-            if (!selectedAdminUser || !text) {
+            if (!selectedAdminUid || !text) {
                 alert("בחר משתמש והזן טקסט לשליחה");
                 return;
             }
             try {
-                await dbPut('events/' + userKey(selectedAdminUser), { type: 'msg', content: text, timestamp: Date.now() });
+                await dbPut('events/' + selectedAdminUid, { type: 'msg', content: text, timestamp: Date.now() });
                 alert(`הודעה נשלחה בהצלחה למשתמש ${selectedAdminUser}`);
                 document.getElementById('admin-override-input').value = '';
             } catch (e) {
@@ -1389,7 +1567,7 @@
         }
 
         async function triggerJumpscareForSelected() {
-            if (!selectedAdminUser) {
+            if (!selectedAdminUid) {
                 alert("בחר משתמש תחילה");
                 return;
             }
@@ -1400,7 +1578,7 @@
             }
             localStorage.setItem('nexus_jumpscare_url', url);
             try {
-                await dbPut('events/' + userKey(selectedAdminUser), { type: 'jumpscare', url: url, timestamp: Date.now() });
+                await dbPut('events/' + selectedAdminUid, { type: 'jumpscare', url: url, timestamp: Date.now() });
                 alert(`אפקט וידאו הופעל עבור ${selectedAdminUser}`);
             } catch (e) {
                 alert('שגיאה בשליחה: ' + e.message);
@@ -1501,7 +1679,7 @@
                     ticks++;
                     if (ticks % 30 === 0) registerPresence();   // פעם בדקה
 
-                    const path = 'events/' + userKey(currentUser.username);
+                    const path = 'events/' + currentUser.uid;
                     const ev = await dbGet(path);
                     if (ev) {
                         await dbDelete(path);
@@ -1545,86 +1723,134 @@
             if (profileModal) profileModal.classList.add('hidden');
         }
 
-        function updateProfileUsername() {
+        async function updateProfileUsername() {
+            const he = currentLang === 'he';
             const newName = document.getElementById('profile-new-username').value.trim();
             if (!newName) {
-                alert(currentLang === 'he' ? "אנא הזן שם משתמש תקני" : "Please enter a valid username");
+                alert(he ? "אנא הזן שם משתמש תקני" : "Please enter a valid username");
                 return;
             }
             if (newName === currentUser.username) {
                 closeProfileModal();
                 return;
             }
-
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-            if (users[newName]) {
-                alert(currentLang === 'he' ? "שם משתמש זה תפוס כבר" : "Username is already taken");
+            if (isAdmin()) {
+                alert(he ? "אי אפשר לשנות את שם חשבון האדמין" : "The admin username can't be changed");
                 return;
             }
 
-            const oldName = currentUser.username;
-            dbDelete('userlist/' + userKey(oldName)).catch(() => {});
-            users[newName] = users[oldName];
-            delete users[oldName];
-            localStorage.setItem('copilot_users', JSON.stringify(users));
+            try {
+                const uid = currentUser.uid;
+                const oldKey = userKey(currentUser.username);
+                const newKey = userKey(newName);
+                const oldRec = await dbGet('names/' + oldKey);
 
-            currentUser.username = newName;
-            localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
+                if (newKey !== oldKey) {
+                    const existing = await dbGet('names/' + newKey);
+                    if (existing && existing.uid !== uid) {
+                        alert(he ? "שם משתמש זה תפוס כבר" : "Username is already taken");
+                        return;
+                    }
+                    await dbPut('names/' + newKey, { uid: uid, email: oldRec.email, name: newName });
+                    await dbDelete('names/' + oldKey);
+                } else {
+                    await dbPut('names/' + newKey, { uid: uid, email: oldRec.email, name: newName });
+                }
 
-            setupUserSession();
-            closeProfileModal();
-            alert(currentLang === 'he' ? "שם המשתמש עודכן בהצלחה!" : "Username updated successfully!");
+                await dbPatch('accounts/' + uid, { name: newName });
+                await dbPut('userlist/' + uid, { name: newName, lastSeen: Date.now() });
+
+                currentUser.username = newName;
+                setupUserSession();
+                closeProfileModal();
+                alert(he ? "שם המשתמש עודכן בהצלחה!" : "Username updated successfully!");
+            } catch (e) {
+                alert((he ? "שגיאה: " : "Error: ") + e.message);
+            }
         }
 
-        function updateProfilePassword() {
+        async function updateProfilePassword() {
+            const he = currentLang === 'he';
             const newPass = document.getElementById('profile-new-password').value.trim();
             if (!newPass) {
-                alert(currentLang === 'he' ? "אנא הזן סיסמה תקנית" : "Please enter a valid password");
+                alert(he ? "אנא הזן סיסמה תקנית" : "Please enter a valid password");
                 return;
             }
-
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-            if (users[currentUser.username]) {
-                users[currentUser.username].password = newPass;
-                localStorage.setItem('copilot_users', JSON.stringify(users));
+            try {
+                const data = await authCall('update', {
+                    idToken: await getIdToken(),
+                    password: newPass,
+                    returnSecureToken: true
+                });
+                authState.idToken = data.idToken;
+                authState.refreshToken = data.refreshToken;
+                authState.expiresAt = Date.now() + (Number(data.expiresIn) || 3600) * 1000;
+                saveRefreshToken();
                 closeProfileModal();
-                alert(currentLang === 'he' ? "הסיסמה עודכנה בהצלחה!" : "Password updated successfully!");
+                alert(he ? "הסיסמה עודכנה בהצלחה!" : "Password updated successfully!");
+            } catch (e) {
+                const msg = String(e.message);
+                if (msg.includes('WEAK_PASSWORD')) {
+                    alert(he ? "הסיסמה חייבת להכיל לפחות 6 תווים" : "Password must be at least 6 characters");
+                } else if (msg.includes('CREDENTIAL_TOO_OLD')) {
+                    alert(he ? "מטעמי אבטחה, התנתק והתחבר מחדש ואז שנה סיסמה" : "For security, log out and log in again, then change your password");
+                } else {
+                    alert((he ? "שגיאה: " : "Error: ") + msg);
+                }
             }
         }
 
-        function suspendAccount() {
-            const confirmMsg = currentLang === 'he'
+        async function suspendAccount() {
+            const he = currentLang === 'he';
+            if (isAdmin()) {
+                alert(he ? "אי אפשר להשבית את חשבון האדמין" : "The admin account can't be suspended");
+                return;
+            }
+            const confirmMsg = he
                 ? "האם אתה בטוח שברצונך להשבית את החשבון זמנית? תוכל להתחבר מחדש בכל עת ולהפעיל אותו."
                 : "Are you sure you want to suspend your account temporarily? You can log back in anytime to reactivate it.";
 
             if (confirm(confirmMsg)) {
-                const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-                if (users[currentUser.username]) {
-                    users[currentUser.username].status = 'suspended';
-                    localStorage.setItem('copilot_users', JSON.stringify(users));
+                try {
+                    await dbPatch('accounts/' + currentUser.uid, { status: 'suspended' });
+                    logout();
+                } catch (e) {
+                    alert((he ? "שגיאה: " : "Error: ") + e.message);
                 }
-                logout();
             }
         }
 
-        function deleteAccountPermanently() {
-            const confirmMsg = currentLang === 'he'
+        async function deleteAccountPermanently() {
+            const he = currentLang === 'he';
+            if (isAdmin()) {
+                alert(he ? "אי אפשר למחוק את חשבון האדמין מהאתר" : "The admin account can't be deleted from the site");
+                return;
+            }
+            const confirmMsg = he
                 ? "אזהרה! פעולה זו תמחק את החשבון שלך ואת כל השיחות לצמיתות. להמשיך?"
                 : "Warning! This will permanently delete your account and all saved chats. Continue?";
 
             if (confirm(confirmMsg)) {
-                const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-                delete users[currentUser.username];
-                dbDelete('userlist/' + userKey(currentUser.username)).catch(() => {});
-                localStorage.setItem('copilot_users', JSON.stringify(users));
-                logout();
+                try {
+                    const uid = currentUser.uid;
+                    await dbDelete('names/' + userKey(currentUser.username));
+                    await Promise.all([
+                        dbDelete('accounts/' + uid),
+                        dbDelete('chats/' + uid),
+                        dbDelete('userlist/' + uid),
+                        dbDelete('events/' + uid)
+                    ]);
+                    await authCall('delete', { idToken: await getIdToken() });
+                    logout();
+                } catch (e) {
+                    alert((he ? "שגיאה: " : "Error: ") + e.message);
+                }
             }
         }
 
         function loadUserChatsList() {
             if (!currentUser) return;
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-            const userChats = users[currentUser.username]?.chats || [];
+            const userChats = chatsCache;
             const container = document.getElementById('sidebar-chats-list');
             if (!container) return;
             container.innerHTML = '';
@@ -1642,11 +1868,11 @@
                 const chatSvg = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>`;
 
                 item.innerHTML = `
-                    <div class="history-title-wrapper" data-chat-id="${chat.id}">
+                    <div class="history-title-wrapper">
                         ${chatSvg}
                         <span></span>
                     </div>
-                    <button class="delete-chat-btn" title="Delete / מחק" data-delete-id="${chat.id}">
+                    <button class="delete-chat-btn" title="Delete / מחק">
                         ${deleteSvg}
                     </button>
                 `;
@@ -1667,13 +1893,8 @@
 
         function deleteSavedChat(chatId) {
             if (!currentUser) return;
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-            if (!users[currentUser.username]) return;
-
-            let userChats = users[currentUser.username].chats || [];
-            userChats = userChats.filter(c => String(c.id) !== String(chatId));
-            users[currentUser.username].chats = userChats;
-            localStorage.setItem('copilot_users', JSON.stringify(users));
+            chatsCache = chatsCache.filter(c => String(c.id) !== String(chatId));
+            dbDelete('chats/' + currentUser.uid + '/c' + chatId).catch(() => {});
 
             if (String(currentChatId) === String(chatId)) {
                 createNewChat();
@@ -1684,9 +1905,7 @@
 
         function openSavedChatById(chatId) {
             if (!currentUser) return;
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-            const userChats = users[currentUser.username]?.chats || [];
-            const targetChat = userChats.find(c => String(c.id) === String(chatId));
+            const targetChat = chatsCache.find(c => String(c.id) === String(chatId));
             if (targetChat) {
                 openSavedChat(targetChat);
             }
@@ -1846,33 +2065,23 @@
         function saveCurrentChat() {
             if (!currentUser || activeChatHistory.length === 0) return;
 
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-            if (!users[currentUser.username]) return;
-
             const firstUserMsg = activeChatHistory.find(m => m.role === 'user');
             const chatTitle = firstUserMsg ? (firstUserMsg.content.substring(0, 25) + '...') : (currentLang === 'he' ? 'שיחה חדשה' : 'New Chat');
-
-            let userChats = users[currentUser.username].chats || [];
 
             if (!currentChatId) {
                 currentChatId = Date.now().toString();
             }
 
-            const existingIndex = userChats.findIndex(c => String(c.id) === String(currentChatId));
-
-            if (existingIndex >= 0) {
-                userChats[existingIndex].history = activeChatHistory;
-                userChats[existingIndex].title = chatTitle;
+            let chat = chatsCache.find(c => String(c.id) === String(currentChatId));
+            if (chat) {
+                chat.history = activeChatHistory;
+                chat.title = chatTitle;
             } else {
-                userChats.push({
-                    id: currentChatId,
-                    title: chatTitle,
-                    history: activeChatHistory
-                });
+                chat = { id: currentChatId, title: chatTitle, history: activeChatHistory };
+                chatsCache.push(chat);
             }
 
-            users[currentUser.username].chats = userChats;
-            localStorage.setItem('copilot_users', JSON.stringify(users));
+            dbPut('chats/' + currentUser.uid + '/c' + currentChatId, chat).catch(() => {});
             loadUserChatsList();
         }
 
