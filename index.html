@@ -119,6 +119,11 @@
             position: relative;
         }
 
+        /* הסתרה מוחלטת של סרגל הצד כשאשר אינו מחובר או כשהוא מוסתר */
+        .sidebar.hidden, body.unauthenticated .sidebar {
+            display: none !important;
+        }
+
         [dir="ltr"] .sidebar {
             border-left: none;
             border-right: 1px solid var(--card-border);
@@ -129,34 +134,78 @@
             overflow: hidden;
             border: none;
         }
-
-        .sidebar-header {
-            padding: 1.2rem;
+        /* מסכי התחברות והרשמה מעוצבים מחדש */
+        .auth-container {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 15, 30, 0.85);
+            backdrop-filter: blur(20px);
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-            border-bottom: 1px solid var(--card-border);
+            z-index: 2000;
+            padding: 1.5rem;
         }
 
-        .new-chat-btn {
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 3rem 2.5rem;
+            border-radius: 1.75rem;
             width: 100%;
-            padding: 0.75rem 1rem;
-            margin: 0.5rem 0;
-            border-radius: 0.75rem;
-            border: 1px dashed var(--accent);
-            background: rgba(56, 189, 248, 0.15);
-            color: var(--accent);
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
+            max-width: 420px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+            text-align: center;
+            animation: messagePop 0.4s ease forwards;
+        }
+
+        .auth-card h2 {
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+            color: var(--text-main);
+        }
+
+        .auth-card p {
+            color: var(--text-muted);
+            margin-bottom: 1.8rem;
+            font-size: 0.95rem;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 0.9rem 1.1rem;
+            margin-bottom: 1.1rem;
+            border-radius: 0.85rem;
+            border: 1px solid var(--card-border);
+            background: rgba(15, 23, 42, 0.7);
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
             transition: all 0.2s ease;
         }
 
-        .new-chat-btn:hover {
-            background: rgba(56, 189, 248, 0.3);
+        .auth-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 0.9rem;
+            border-radius: 0.85rem;
+            border: none;
+            background: var(--accent);
+            color: #0f172a;
+            font-weight: bold;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 0.5rem;
+        }
+
+        .auth-btn:hover {
+            background: var(--accent-hover);
+            color: white;
             transform: translateY(-2px);
         }
 
@@ -948,62 +997,41 @@
         }
 
         window.onload = function() {
+            // זיהוי שפת דפדפן/שפה שמורה מראש לקביעת כיווניות מדויקת (RTL/LTR)
+            const savedLang = localStorage.getItem('copilot_lang');
+            const browserLang = navigator.language && navigator.language.startsWith('he') ? 'he' : 'en';
+            currentLang = savedLang || browserLang;
+
             const savedUser = localStorage.getItem('copilot_current_user');
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
+                document.body.classList.remove('unauthenticated');
                 setupUserSession();
+            } else {
+                document.body.classList.add('unauthenticated');
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) sidebar.classList.add('hidden');
             }
+
             const savedTheme = localStorage.getItem('copilot_theme') || 'ocean';
             const themeSelect = document.getElementById('theme-select');
             if (themeSelect) themeSelect.value = savedTheme;
+            
+            const langSelect = document.getElementById('lang-select');
+            if (langSelect) langSelect.value = currentLang;
+
             changeTheme(savedTheme);
-            updateUI();
+            changeLanguage(currentLang);
         };
 
-        function toggleAuthMode() {
-            isSignUp = !isSignUp;
-            const t = translations[currentLang];
-            document.getElementById('auth-title').textContent = isSignUp ? t.signUpTitle : t.loginTitle;
-            document.getElementById('auth-desc').textContent = isSignUp ? t.signUpDesc : t.loginDesc;
-            document.getElementById('auth-submit-btn').textContent = isSignUp ? t.signUpBtn : t.loginBtn;
-            document.getElementById('auth-toggle-text').textContent = isSignUp ? t.hasAccount : t.noAccount;
-        }
-
-        function handleAuth() {
-            const username = document.getElementById('auth-username').value.trim();
-            const password = document.getElementById('auth-password').value.trim();
-
-            if (!username || !password) {
-                alert(currentLang === 'he' ? "אנא מלא את כל השדות" : "Please fill in all fields");
-                return;
-            }
-
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-
-            if (isSignUp) {
-                if (users[username]) {
-                    alert(currentLang === 'he' ? "שם המשתמש כבר קיים!" : "Username already exists!");
-                    return;
-                }
-                users[username] = { password: password, chats: [] };
-                localStorage.setItem('copilot_users', JSON.stringify(users));
-                currentUser = { username: username };
-                localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
-                setupUserSession();
-            } else {
-                if (!users[username] || users[username].password !== password) {
-                    alert(currentLang === 'he' ? "שם משתמש או סיסמה שגויים" : "Invalid username or password");
-                    return;
-                }
-                currentUser = { username: username };
-                localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
-                setupUserSession();
-            }
-        }
-
         function setupUserSession() {
+            document.body.classList.remove('unauthenticated');
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.remove('hidden');
+
             const authModal = document.getElementById('auth-modal');
             if (authModal) authModal.classList.add('hidden');
+
             const displayUser = document.getElementById('display-username');
             if (displayUser) displayUser.textContent = currentUser.username;
             updateUI();
