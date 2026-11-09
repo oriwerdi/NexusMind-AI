@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexusMind AI</title>
     
-    <!-- הוספת Favicon (אייקון בלשונית הדפדפן) -->
-    <link rel="icon" type="image/png" href="favicon.png">
-    
     <style>
         :root {
             --primary-bg: rgba(15, 23, 42, 0.75);
@@ -303,6 +300,13 @@
             font-size: 1.25rem;
             color: var(--text-main);
             letter-spacing: -0.3px;
+        }
+
+        .logo-img {
+            width: 26px;
+            height: 26px;
+            object-fit: contain;
+            border-radius: 6px;
         }
 
         .user-menu {
@@ -784,7 +788,8 @@
                 <button id="btn-back-nav" class="back-nav-btn hidden" onclick="showHome()" title="Back / חזרה">←</button>
                 <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
                 <div class="logo">
-                    <svg class="svg-icon" style="width:22px; height:22px; color:var(--accent);" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    <img src="favicon.png" alt="NexusMind AI Logo" class="logo-img" onerror="this.style.display='none'; document.getElementById('fallback-logo-icon').style.display='inline-block';">
+                    <svg id="fallback-logo-icon" class="svg-icon" style="width:22px; height:22px; color:var(--accent); display:none;" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
                     <span>NexusMind AI</span>
                 </div>
             </div>
