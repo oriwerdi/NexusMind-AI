@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MatrixAI</title>
+    <title>NexusMind AI</title>
     <style>
         :root {
             --primary-bg: rgba(15, 23, 42, 0.85);
@@ -257,8 +257,8 @@
             z-index: 10;
         }
 
-        /* מסכי התחברות והרשמה */
-        .auth-container {
+        /* מסכי התחברות והרשמה וחלונות מודאל */
+        .auth-container, .modal-overlay {
             position: fixed;
             inset: 0;
             background: rgba(10, 15, 30, 0.92);
@@ -269,29 +269,30 @@
             z-index: 2000;
         }
 
-        .auth-card {
+        .auth-card, .profile-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             padding: 2.5rem;
             border-radius: 1.5rem;
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.6);
             text-align: center;
+            position: relative;
         }
 
-        .auth-card h2 {
+        .auth-card h2, .profile-card h2 {
             margin-bottom: 0.5rem;
             font-size: 1.8rem;
         }
 
-        .auth-card p {
+        .auth-card p, .profile-card p {
             color: var(--text-muted);
             margin-bottom: 1.5rem;
             font-size: 0.95rem;
         }
 
-        .auth-input {
+        .auth-input, .profile-input {
             width: 100%;
             padding: 0.85rem 1rem;
             margin-bottom: 1rem;
@@ -303,11 +304,11 @@
             outline: none;
         }
 
-        .auth-input:focus {
+        .auth-input:focus, .profile-input:focus {
             border-color: var(--accent);
         }
 
-        .auth-btn {
+        .auth-btn, .action-btn {
             width: 100%;
             padding: 0.85rem;
             border-radius: 0.75rem;
@@ -318,10 +319,47 @@
             font-size: 1rem;
             cursor: pointer;
             transition: 0.2s;
+            margin-bottom: 0.5rem;
         }
 
-        .auth-btn:hover {
+        .auth-btn:hover, .action-btn:hover {
             background: #7dd3fc;
+        }
+
+        .btn-warning {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            color: #fbbf24;
+        }
+
+        .btn-warning:hover {
+            background: rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #f87171;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.4);
+        }
+
+        .close-modal-btn {
+            position: absolute;
+            top: 1.2rem;
+            left: 1.2rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        [dir="ltr"] .close-modal-btn {
+            left: auto;
+            right: 1.2rem;
         }
 
         .auth-toggle {
@@ -421,6 +459,18 @@
             border-radius: 2rem;
             font-size: 0.9rem;
             border: 1px solid var(--card-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+        }
+
+        .user-badge:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px);
         }
 
         .logout-btn {
@@ -702,7 +752,7 @@
         <!-- מסך התחברות / הרשמה -->
         <div id="auth-modal" class="auth-container">
             <div class="auth-card">
-                <h2 id="auth-title">התחברות ל-MatrixAI</h2>
+                <h2 id="auth-title">התחברות ל-NexusMind AI</h2>
                 <p id="auth-desc">הכנס פרטים כדי להמשיך לשיחות שלך</p>
                 
                 <input type="text" id="auth-username" class="auth-input" placeholder="שם משתמש">
@@ -716,6 +766,34 @@
             </div>
         </div>
 
+        <!-- חלון פרופיל משתמש (Profile Modal) -->
+        <div id="profile-modal" class="modal-overlay hidden">
+            <div class="profile-card">
+                <button class="close-modal-btn" onclick="closeProfileModal()">✕</button>
+                <h2 id="profile-modal-title">פרופיל משתמש</h2>
+                <p id="profile-modal-desc">נהל את פרטי החשבון שלך ב-NexusMind</p>
+                
+                <div style="text-align: right; margin-bottom: 0.5rem;" dir="auto">
+                    <label style="font-size: 0.85rem; color: var(--text-muted);" id="lbl-change-name">שם משתמש חדש:</label>
+                </div>
+                <input type="text" id="profile-new-username" class="profile-input" placeholder="שם משתמש חדש">
+                <button class="action-btn" onclick="updateProfileUsername()" id="btn-save-username">עדכן שם משתמש</button>
+                
+                <hr style="border-color: var(--card-border); margin: 1rem 0;">
+
+                <div style="text-align: right; margin-bottom: 0.5rem;" dir="auto">
+                    <label style="font-size: 0.85rem; color: var(--text-muted);" id="lbl-change-pass">סיסמה חדשה:</label>
+                </div>
+                <input type="password" id="profile-new-password" class="profile-input" placeholder="סיסמה חדשה">
+                <button class="action-btn" onclick="updateProfilePassword()" id="btn-save-password">עדכן סיסמה</button>
+                
+                <hr style="border-color: var(--card-border); margin: 1rem 0;">
+
+                <button class="action-btn btn-warning" onclick="suspendAccount()" id="btn-suspend-account">השבת חשבון זמנית</button>
+                <button class="action-btn btn-danger" onclick="deleteAccountPermanently()" id="btn-delete-account">מחק חשבון לצמיתות</button>
+            </div>
+        </div>
+
         <!-- סרגל עליון -->
         <header>
             <div class="header-left">
@@ -723,7 +801,7 @@
                 <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
                 <div class="logo">
                     <svg class="svg-icon" style="width:22px; height:22px; color:var(--accent);" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                    <span>MatrixAI</span>
+                    <span>NexusMind AI</span>
                 </div>
             </div>
             <div class="user-menu">
@@ -737,7 +815,10 @@
                     <option value="he">עברית</option>
                     <option value="en">English</option>
                 </select>
-                <span class="user-badge" id="display-username">אורח</span>
+                <span class="user-badge" id="display-username" onclick="openProfileModal()" title="לחץ לניהול הפרופיל">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    <span id="user-badge-text">אורח</span>
+                </span>
                 <button class="logout-btn" onclick="logout()" id="lbl-logout">התנתק</button>
             </div>
         </header>
@@ -778,7 +859,7 @@
             <div class="search-box-container" style="margin-bottom: 0;">
                 <input type="text" id="chat-input" class="search-box-input" placeholder="הקלד הודעה או בקשה לתמונה..." onkeydown="if(event.key === 'Enter') sendChatMessage()">
                 <div class="search-box-tools">
-                    <span style="font-size:0.8rem; color:var(--text-muted);" id="lbl-ai-status">MatrixAI v2.5</span>
+                    <span style="font-size:0.8rem; color:var(--text-muted);" id="lbl-ai-status">NexusMind AI v3.0</span>
                     <button class="send-btn" onclick="sendChatMessage()">
                         <svg class="svg-icon send-btn-icon" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
@@ -813,8 +894,8 @@
                 createImg: "צור תמונה",
                 logout: "התנתק",
                 guest: "אורח",
-                loginTitle: "התחברות ל-MatrixAI",
-                signUpTitle: "הרשמה ל-MatrixAI",
+                loginTitle: "התחברות ל-NexusMind AI",
+                signUpTitle: "הרשמה ל-NexusMind AI",
                 loginDesc: "הכנס פרטים כדי להמשיך לשיחות שלך",
                 signUpDesc: "צור חשבון בחינם בשני צעדים",
                 loginBtn: "התחבר",
@@ -827,7 +908,15 @@
                 creatorQ: "מי יצר אותך?",
                 catQ: "חתול בחלל",
                 codeQ: "קוד לרובלוקס",
-                jokeQ: "ספר לי בדיחה"
+                jokeQ: "ספר לי בדיחה",
+                profileTitle: "פרופיל משתמש",
+                profileDesc: "נהל את פרטי החשבון שלך ב-NexusMind",
+                lblChangeName: "שם משתמש חדש:",
+                lblChangePass: "סיסמה חדשה:",
+                btnSaveName: "עדכן שם משתמש",
+                btnSavePass: "עדכן סיסמה",
+                btnSuspend: "השבת חשבון זמנית",
+                btnDelete: "מחק חשבון לצמיתות"
             },
             en: {
                 greeting: "Good Afternoon",
@@ -837,8 +926,8 @@
                 createImg: "Generate Image",
                 logout: "Log Out",
                 guest: "Guest",
-                loginTitle: "Login to MatrixAI",
-                signUpTitle: "Sign Up for MatrixAI",
+                loginTitle: "Login to NexusMind AI",
+                signUpTitle: "Sign Up for NexusMind AI",
                 loginDesc: "Enter your credentials to access your chats",
                 signUpDesc: "Create a free account in 2 simple steps",
                 loginBtn: "Log In",
@@ -851,7 +940,15 @@
                 creatorQ: "Who created you?",
                 catQ: "Cat in space",
                 codeQ: "Code for Roblox",
-                jokeQ: "Tell me a joke"
+                jokeQ: "Tell me a joke",
+                profileTitle: "User Profile",
+                profileDesc: "Manage your NexusMind account details",
+                lblChangeName: "New Username:",
+                lblChangePass: "New Password:",
+                btnSaveName: "Update Username",
+                btnSavePass: "Update Password",
+                btnSuspend: "Suspend Account Temporarily",
+                btnDelete: "Delete Account Permanently"
             }
         };
 
@@ -912,6 +1009,24 @@
             const sidebarTitle = document.getElementById('lbl-recent-chats');
             if (sidebarTitle) sidebarTitle.textContent = t.recentChats;
 
+            // Profile Modal Texts
+            const profileTitle = document.getElementById('profile-modal-title');
+            if (profileTitle) profileTitle.textContent = t.profileTitle;
+            const profileDesc = document.getElementById('profile-modal-desc');
+            if (profileDesc) profileDesc.textContent = t.profileDesc;
+            const lblChangeName = document.getElementById('lbl-change-name');
+            if (lblChangeName) lblChangeName.textContent = t.lblChangeName;
+            const lblChangePass = document.getElementById('lbl-change-pass');
+            if (lblChangePass) lblChangePass.textContent = t.lblChangePass;
+            const btnSaveName = document.getElementById('btn-save-name');
+            if (btnSaveName) btnSaveName.textContent = t.btnSaveName;
+            const btnSavePass = document.getElementById('btn-save-pass');
+            if (btnSavePass) btnSavePass.textContent = t.btnSavePass;
+            const btnSuspend = document.getElementById('btn-suspend-account');
+            if (btnSuspend) btnSuspend.textContent = t.btnSuspend;
+            const btnDelete = document.getElementById('btn-delete-account');
+            if (btnDelete) btnDelete.textContent = t.btnDelete;
+
             const chips = document.querySelectorAll('.chip');
             if (chips.length >= 5) {
                 chips[1].querySelector('span') ? chips[1].querySelector('span').textContent = t.creatorQ : chips[1].textContent = t.creatorQ;
@@ -954,7 +1069,6 @@
         }
 
         window.onload = function() {
-            // זיהוי שפת דפדפן אוטומטי
             const userLang = navigator.language || navigator.userLanguage;
             if (userLang && userLang.startsWith('en')) {
                 currentLang = 'en';
@@ -968,7 +1082,6 @@
                 currentUser = JSON.parse(savedUser);
                 setupUserSession();
             } else {
-                // המשתמש לא מחובר - וודא שסרגל הצד מוסתר לחלוטין
                 const sidebar = document.getElementById('sidebar');
                 if (sidebar) sidebar.classList.add('hidden');
             }
@@ -1004,7 +1117,7 @@
                     alert(currentLang === 'he' ? "שם המשתמש כבר קיים!" : "Username already exists!");
                     return;
                 }
-                users[username] = { password: password, chats: [] };
+                users[username] = { password: password, chats: [], status: 'active' };
                 localStorage.setItem('copilot_users', JSON.stringify(users));
                 currentUser = { username: username };
                 localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
@@ -1013,6 +1126,12 @@
                 if (!users[username] || users[username].password !== password) {
                     alert(currentLang === 'he' ? "שם משתמש או סיסמה שגויים" : "Invalid username or password");
                     return;
+                }
+                // אם החשבון היה מוקפא, הוא מוטען חזרה כמפועל
+                if (users[username].status === 'suspended') {
+                    users[username].status = 'active';
+                    localStorage.setItem('copilot_users', JSON.stringify(users));
+                    alert(currentLang === 'he' ? "החשבון שלך הופעל מחדש בהצלחה!" : "Your account has been reactivated successfully!");
                 }
                 currentUser = { username: username };
                 localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
@@ -1024,18 +1143,107 @@
             const authModal = document.getElementById('auth-modal');
             if (authModal) authModal.classList.add('hidden');
             
-            // הצג את סרגל הצד
             const sidebar = document.getElementById('sidebar');
             if (sidebar) sidebar.classList.remove('hidden');
 
-            const displayUser = document.getElementById('display-username');
-            if (displayUser) displayUser.textContent = currentUser.username;
+            const displayUserText = document.getElementById('user-badge-text');
+            if (displayUserText) displayUserText.textContent = currentUser.username;
             updateUI();
         }
 
         function logout() {
             localStorage.removeItem('copilot_current_user');
             location.reload();
+        }
+
+        /* ניהול חלון פרופיל משתמש */
+        function openProfileModal() {
+            if (!currentUser) return;
+            const profileModal = document.getElementById('profile-modal');
+            if (profileModal) {
+                document.getElementById('profile-new-username').value = currentUser.username;
+                document.getElementById('profile-new-password').value = '';
+                profileModal.classList.remove('hidden');
+            }
+        }
+
+        function closeProfileModal() {
+            const profileModal = document.getElementById('profile-modal');
+            if (profileModal) profileModal.classList.add('hidden');
+        }
+
+        function updateProfileUsername() {
+            const newName = document.getElementById('profile-new-username').value.trim();
+            if (!newName) {
+                alert(currentLang === 'he' ? "אנא הזן שם משתמש תקני" : "Please enter a valid username");
+                return;
+            }
+            if (newName === currentUser.username) {
+                closeProfileModal();
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            if (users[newName]) {
+                alert(currentLang === 'he' ? "שם משתמש זה תפוס כבר" : "Username is already taken");
+                return;
+            }
+
+            const oldName = currentUser.username;
+            users[newName] = users[oldName];
+            delete users[oldName];
+            localStorage.setItem('copilot_users', JSON.stringify(users));
+
+            currentUser.username = newName;
+            localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
+
+            setupUserSession();
+            closeProfileModal();
+            alert(currentLang === 'he' ? "שם המשתמש עודכן בהצלחה!" : "Username updated successfully!");
+        }
+
+        function updateProfilePassword() {
+            const newPass = document.getElementById('profile-new-password').value.trim();
+            if (!newPass) {
+                alert(currentLang === 'he' ? "אנא הזן סיסמה תקנית" : "Please enter a valid password");
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            if (users[currentUser.username]) {
+                users[currentUser.username].password = newPass;
+                localStorage.setItem('copilot_users', JSON.stringify(users));
+                closeProfileModal();
+                alert(currentLang === 'he' ? "הסיסמה עודכנה בהצלחה!" : "Password updated successfully!");
+            }
+        }
+
+        function suspendAccount() {
+            const confirmMsg = currentLang === 'he' 
+                ? "האם אתה בטוח שברצונך להשבית את החשבון זמנית? תוכל להתחבר מחדש בכל עת ולהפעיל אותו." 
+                : "Are you sure you want to suspend your account temporarily? You can log back in anytime to reactivate it.";
+            
+            if (confirm(confirmMsg)) {
+                const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+                if (users[currentUser.username]) {
+                    users[currentUser.username].status = 'suspended';
+                    localStorage.setItem('copilot_users', JSON.stringify(users));
+                }
+                logout();
+            }
+        }
+
+        function deleteAccountPermanently() {
+            const confirmMsg = currentLang === 'he' 
+                ? "אזהרה! פעולה זו תמחק את החשבון שלך ואת כל השיחות לצמיתות. להמשיך?" 
+                : "Warning! This will permanently delete your account and all saved chats. Continue?";
+            
+            if (confirm(confirmMsg)) {
+                const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+                delete users[currentUser.username];
+                localStorage.setItem('copilot_users', JSON.stringify(users));
+                logout();
+            }
         }
 
         function loadUserChatsList() {
@@ -1192,7 +1400,7 @@
                         ${currentLang === 'he' ? 'הנה התמונה שיצרתי עבורך:' : 'Here is your generated image:'}<br>
                         <img src="${imgUrl}" alt="Generated Image" crossorigin="anonymous">
                         <br>
-                        <a href="${imgUrl}" target="_blank" download="matrixai-image.png" class="download-btn">
+                        <a href="${imgUrl}" target="_blank" download="nexusmind-image.png" class="download-btn">
                             <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                             ${currentLang === 'he' ? 'הורד תמונה' : 'Download Image'}
                         </a>
@@ -1207,8 +1415,8 @@
                     const userNameStr = currentUser ? currentUser.username : "User";
 
                     const systemPromptText = currentLang === 'he'
-                        ? `אתה עוזר חכם ומקצועי. שם המשתמש מולך הוא ${userNameStr}. ענה בשפה שבה הפנו אליך שאלה (עברית או אנגלית). אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד ברנדומליות בסגנון: "${randomCreatorResp}". לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר.`
-                        : `You are a smart and empathetic AI assistant. The current user name is ${userNameStr}. Respond in the language used by the user. If asked who created, built, or owns you, ALWAYS answer dynamically like: "${randomCreatorResp}". Do not name third parties or call yourself anything else.`;
+                        ? `אתה NexusMind AI - עוזר חכם ומקצועי. שם המשתמש מולך הוא ${userNameStr}. ענה בשפה שבה הפנו אליך שאלה (עברית או אנגלית). אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד ברנדומליות בסגנון: "${randomCreatorResp}". לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר.`
+                        : `You are NexusMind AI - a smart and empathetic AI assistant. The current user name is ${userNameStr}. Respond in the language used by the user. If asked who created, built, or owns you, ALWAYS answer dynamically like: "${randomCreatorResp}". Do not name third parties or call yourself anything else.`;
 
                     const systemMessages = [
                         { role: "system", content: systemPromptText },
