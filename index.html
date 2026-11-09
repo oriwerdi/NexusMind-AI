@@ -1345,10 +1345,18 @@
             clearTimeout(jumpscareTimer);
         }
 
+        // ממיר קישור לדף של Vlipsy לקובץ ה-mp4 הישיר שלו
+        function resolveVideoUrl(url) {
+            const m = url.match(/vlipsy\.com\/clips\/(?:\w+-)*([A-Za-z0-9]+)/i);
+            if (m) return 'https://cdn.vlipsy.com/clips/meta/' + m[1] + '/480p-watermark.mp4';
+            return url;
+        }
+
         function playJumpscare(url) {
             const container = document.getElementById('jumpscare-container');
             url = url || localStorage.getItem('nexus_jumpscare_url') || JUMPSCARE_VIDEO_URL;
             if (!container || !url) return;
+            url = resolveVideoUrl(url);
 
             container.innerHTML = '';
             container.classList.remove('hidden');
