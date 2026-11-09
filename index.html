@@ -845,7 +845,7 @@
 
                 <!-- פתקית קישורים שמורים (Saved Video Notes) -->
                 <div style="background: rgba(15, 23, 42, 0.6); border: 1px dashed var(--accent); padding: 0.6rem 0.8rem; border-radius: 0.6rem; margin-bottom: 0.8rem; font-size: 0.8rem;">
-                    <div style="display:flex; justify-size: space-between; align-items: center; margin-bottom: 0.3rem;">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
                         <span style="color:var(--accent); font-weight:bold;">📌 פתקית סרטונים שמורים (Saved Video Notes):</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:0.4rem 0.6rem; border-radius:0.4rem;">
@@ -957,31 +957,47 @@
         const API_KEY = "bgs_live_1ee39ea97e4f175c2c6b4ac63490220f377d43775a56ac30";
         const API_BASE_URL = "https://birgsol-gh.davidyosef2102014.workers.dev/v1";
 
-        let currentLang = 'he';
         let currentUser = null;
+        let isSignUp = false;
         let activeChatHistory = [];
         let currentChatId = null;
-        let isSignUp = false;
+        let currentLang = 'he';
         let selectedAdminUser = null;
+
+        const creatorResponsesHe = [
+            "אני NexusMind AI, פותחתי על ידי צוות הפיתוח של NexusMind!",
+            "נוצרתי והורכבתי על ידי חברת NexusMind AI כדי לספק לך מענה חכם.",
+            "אני המודל המבוסס של NexusMind AI, שפותח במיוחד ע\"י NexusMind."
+        ];
+
+        const creatorResponsesEn = [
+            "I am NexusMind AI, developed by the NexusMind engineering team!",
+            "I was created and built by NexusMind AI to assist you intelligently.",
+            "I am NexusMind AI, developed natively by NexusMind."
+        ];
 
         const translations = {
             he: {
-                greeting: "אחר הצהריים טובים",
-                greetingSub: "במה אוכל לעזור לך היום",
+                greeting: "אחר צהריים טובים",
+                greetingSub: "במה אוכל לעזור לך היום?",
                 placeholderHome: "שאל שאלה או בקש ליצור תמונה...",
                 placeholderChat: "הקלד הודעה או בקשה לתמונה...",
                 logout: "התנתק",
                 createImg: "צור תמונה",
+                creatorQ: "מי יצר אותך?",
+                catQ: "חתול בחלל",
+                codeQ: "קוד לרובלוקס",
+                jokeQ: "ספר לי בדיחה",
                 newChat: "שיחה חדשה",
                 recentChats: "השיחות האחרונות",
                 noChats: "אין שיחות שמורות עדיין",
                 signUpTitle: "הרשמה ל-NexusMind AI",
-                signUpDesc: "צור חשבון חדש כדי לשמור שיחות",
+                signUpDesc: "צור חשבון חדש כדי לשמור את השיחות שלך",
                 loginTitle: "התחברות ל-NexusMind AI",
                 loginDesc: "הכנס פרטים כדי להמשיך לשיחות שלך",
                 signUpBtn: "צור חשבון",
                 loginBtn: "התחבר",
-                hasAccount: "יש לך כבר חשבון? התחבר כאן",
+                hasAccount: "כבר יש לך חשבון? התחבר כאן",
                 noAccount: "אין לך חשבון? הרשם בחינם",
                 profileTitle: "פרופיל משתמש",
                 profileDesc: "נהל את פרטי החשבון שלך ב-NexusMind",
@@ -990,63 +1006,45 @@
                 btnSaveName: "עדכן שם משתמש",
                 btnSavePass: "עדכן סיסמה",
                 btnSuspend: "השבת חשבון זמנית",
-                btnDelete: "מחק חשבון לצמיתות",
-                creatorQ: "מי יצר אותך?",
-                catQ: "חתול בחלל",
-                codeQ: "קוד לרובלוקס",
-                jokeQ: "ספר לי בדיחה"
+                btnDelete: "מחק חשבון לצמיתות"
             },
             en: {
                 greeting: "Good afternoon",
-                greetingSub: "What can I help you with today",
+                greetingSub: "What can I help you with today?",
                 placeholderHome: "Ask a question or request an image...",
                 placeholderChat: "Type a message or request an image...",
-                logout: "Logout",
-                createImg: "Create Image",
+                logout: "Log out",
+                createImg: "Generate Image",
+                creatorQ: "Who created you?",
+                catQ: "Cat in space",
+                codeQ: "Roblox Code",
+                jokeQ: "Tell me a joke",
                 newChat: "New Chat",
                 recentChats: "Recent Chats",
                 noChats: "No saved chats yet",
-                signUpTitle: "Sign Up to NexusMind AI",
-                signUpDesc: "Create a new account to save your chats",
+                signUpTitle: "Sign Up for NexusMind AI",
+                signUpDesc: "Create a new account to save your conversations",
                 loginTitle: "Login to NexusMind AI",
-                loginDesc: "Enter details to continue to your chats",
-                signUpBtn: "Sign Up",
-                loginBtn: "Login",
-                hasAccount: "Already have an account? Login here",
+                loginDesc: "Enter details to access your chats",
+                signUpBtn: "Create Account",
+                loginBtn: "Log In",
+                hasAccount: "Already have an account? Log in",
                 noAccount: "Don't have an account? Register free",
                 profileTitle: "User Profile",
-                profileDesc: "Manage your NexusMind account details",
+                profileDesc: "Manage your account details in NexusMind",
                 lblChangeName: "New Username:",
                 lblChangePass: "New Password:",
                 btnSaveName: "Update Username",
                 btnSavePass: "Update Password",
                 btnSuspend: "Suspend Account Temporarily",
-                btnDelete: "Delete Account Permanently",
-                creatorQ: "Who created you?",
-                catQ: "Space Cat",
-                codeQ: "Roblox Code",
-                jokeQ: "Tell me a joke"
+                btnDelete: "Delete Account Permanently"
             }
         };
 
-        const creatorResponsesHe = [
-            "אני נוצרתי ופותחתי על ידי oriwerdi המוכשר!",
-            "היוצר היחיד והמפתח שלי הוא oriwerdi!",
-            "oriwerdi הוא המוח והמפתח שמאחורי NexusMind AI!",
-            "בנה אותי ועיצב אותי oriwerdi המלך!"
-        ];
-
-        const creatorResponsesEn = [
-            "I was created and built by the talented oriwerdi!",
-            "My sole creator and developer is oriwerdi!",
-            "oriwerdi is the mind behind NexusMind AI!",
-            "I was coded and designed by oriwerdi!"
-        ];
-
         const themeVideos = {
             ocean: "https://assets.mixkit.co/videos/preview/mixkit-abstract-fast-line-motion-animation-43187-large.mp4",
-            purple: "https://assets.mixkit.co/videos/preview/mixkit-waves-in-neon-purple-lights-14125-large.mp4",
-            dark: "https://assets.mixkit.co/videos/preview/mixkit-stars-in-space-background-1610-large.mp4",
+            purple: "https://assets.mixkit.co/videos/preview/mixkit-stars-in-space-background-1610-large.mp4",
+            dark: "https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-screens-31804-large.mp4",
             light: "https://assets.mixkit.co/videos/preview/mixkit-clouds-and-blue-sky-2408-large.mp4"
         };
 
@@ -1054,10 +1052,11 @@
             currentLang = lang;
             document.documentElement.lang = lang;
             document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
-            
+
             const langSelect = document.getElementById('lang-select');
             if (langSelect) langSelect.value = lang;
-            
+
+            localStorage.setItem('copilot_lang', lang);
             updateUI();
         }
 
@@ -1065,565 +1064,769 @@
         let JUMPSCARE_VIDEO_URL = "https://vlipsy.com/clips/3hEsFXt9";
 
         function copySavedNoteUrl() {
-            const urlText = document.getElementById('saved-note-url').innerText;
-            const videoInput = document.getElementById('admin-video-url-input');
-            if (videoInput) videoInput.value = urlText;
-            
-            // העתקה ללוח הלוח
-            const tempInput = document.createElement('input');
-            tempInput.value = urlText;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            
-            alert('הקישור הועתק והודבק בתיבת הווידאו!');
-        }
-
-        // --- ניהול ערכות נושא ואינטרפייס ---
-        function changeTheme(theme) {
-            document.body.className = '';
-            if (theme !== 'ocean') {
-                document.body.classList.add('theme-' + theme);
-            }
-            
-            const videoSrc = themeVideos[theme] || themeVideos.ocean;
-            const bgVideo = document.getElementById('bg-video');
-            const bgVideoSrc = document.getElementById('bg-video-src');
-            
-            if (bgVideoSrc && bgVideo) {
-                bgVideoSrc.src = videoSrc;
-                bgVideo.load();
-                bgVideo.play().catch(() => {});
-            }
-        }
-
-        function updateUI() {
-            const t = translations[currentLang] || translations.he;
-            
-            document.getElementById('greeting-title').innerText = t.greeting;
-            document.getElementById('greeting-name').innerText = (currentUser ? currentUser : '') + ', ' + t.greetingSub + '?';
-            document.getElementById('home-input').placeholder = t.placeholderHome;
-            document.getElementById('chat-input').placeholder = t.placeholderChat;
-            document.getElementById('lbl-logout').innerText = t.logout;
-            document.getElementById('chip-create-img').innerText = t.createImg;
-            document.getElementById('lbl-new-chat').innerText = t.newChat;
-            document.getElementById('lbl-recent-chats').innerText = t.recentChats;
-
-            // עדכון חלונות מודאל
-            if (isSignUp) {
-                document.getElementById('auth-title').innerText = t.signUpTitle;
-                document.getElementById('auth-desc').innerText = t.signUpDesc;
-                document.getElementById('auth-submit-btn').innerText = t.signUpBtn;
-                document.getElementById('auth-toggle-text').innerText = t.hasAccount;
-            } else {
-                document.getElementById('auth-title').innerText = t.loginTitle;
-                document.getElementById('auth-desc').innerText = t.loginDesc;
-                document.getElementById('auth-submit-btn').innerText = t.loginBtn;
-                document.getElementById('auth-toggle-text').innerText = t.noAccount;
-            }
-
-            document.getElementById('profile-modal-title').innerText = t.profileTitle;
-            document.getElementById('profile-modal-desc').innerText = t.profileDesc;
-            document.getElementById('lbl-change-name').innerText = t.lblChangeName;
-            document.getElementById('lbl-change-pass').innerText = t.lblChangePass;
-            document.getElementById('btn-save-username').innerText = t.btnSaveName;
-            document.getElementById('btn-save-password').innerText = t.btnSavePass;
-            document.getElementById('btn-suspend-account').innerText = t.btnSuspend;
-            document.getElementById('btn-delete-account').innerText = t.btnDelete;
-
-            renderSidebarChats();
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('collapsed');
-        }
-
-        // --- מנגנון אוטנטיקציה וחשבונות ---
-        function checkSession() {
-            const savedUser = localStorage.getItem('nexus_current_user');
-            if (savedUser) {
-                const users = JSON.parse(localStorage.getItem('nexus_users') || '{}');
-                if (users[savedUser] && !users[savedUser].suspended) {
-                    loginUser(savedUser);
-                    return;
-                }
-            }
-            showAuthModal();
-        }
-
-        function showAuthModal() {
-            document.getElementById('auth-modal').classList.remove('hidden');
-            document.getElementById('sidebar').classList.add('hidden');
-        }
-
-        function hideAuthModal() {
-            const authModal = document.getElementById('auth-modal');
-            authModal.classList.add('login-anim');
-            setTimeout(() => {
-                authModal.classList.add('hidden');
-                authModal.classList.remove('login-anim');
-            }, 400);
-            document.getElementById('sidebar').classList.remove('hidden');
-        }
-
-        function toggleAuthMode() {
-            isSignUp = !isSignUp;
-            updateUI();
-        }
-
-        function handleAuth() {
-            const userInput = document.getElementById('auth-username').value.trim();
-            const passInput = document.getElementById('auth-password').value.trim();
-
-            if (!userInput || !passInput) {
-                alert(currentLang === 'he' ? 'אנא מלא את כל השדות' : 'Please fill all fields');
-                return;
-            }
-
-            let users = JSON.parse(localStorage.getItem('nexus_users') || '{}');
-
-            // הוספת מנגנון חכם: אם מדובר ב-oriwerdi או משתמש חדש, צור/עדכן אותו אוטומטית כדי שלא ייחסם
-            if (isSignUp) {
-                if (users[userInput]) {
-                    alert(currentLang === 'he' ? 'שם המשתמש כבר תפוס' : 'Username already exists');
-                    return;
-                }
-                users[userInput] = { password: passInput, suspended: false };
-                localStorage.setItem('nexus_users', JSON.stringify(users));
-                loginUser(userInput);
-            } else {
-                // אם החשבון לא קיים כלל בלוקאל סטורג', צור אותו אוטומטית עם הסיסמה שהוזנה (מונע חסימה)
-                if (!users[userInput]) {
-                    users[userInput] = { password: passInput, suspended: false };
-                    localStorage.setItem('nexus_users', JSON.stringify(users));
-                    loginUser(userInput);
-                    return;
-                }
-
-                // בדיקת סיסמה מול החשבון הקיים
-                if (users[userInput].password !== passInput) {
-                    // אם זה oriwerdi, נעדכן את הסיסמה לסיסמה החדשה שהקלדת כדי לשחרר את החסימה
-                    if (userInput.toLowerCase() === 'oriwerdi') {
-                        users[userInput].password = passInput;
-                        users[userInput].suspended = false;
-                        localStorage.setItem('nexus_users', JSON.stringify(users));
-                        loginUser(userInput);
-                        return;
-                    }
-                    alert(currentLang === 'he' ? 'שם משתמש או סיסמה שגויים' : 'Invalid username or password');
-                    return;
-                }
-
-                if (users[userInput].suspended) {
-                    // הפעלה מחדש אם החשבון היה מוקפא
-                    users[userInput].suspended = false;
-                    localStorage.setItem('nexus_users', JSON.stringify(users));
-                }
-                loginUser(userInput);
-            }
-        }
-
-        function loginUser(username) {
-            currentUser = username;
-            localStorage.setItem('nexus_current_user', username);
-            document.getElementById('user-badge-text').innerText = username;
-            
-            // בודק אם מדובר ב-oriwerdi (מנהל)
-            if (username.toLowerCase() === 'oriwerdi') {
-                document.getElementById('btn-admin-panel').classList.remove('hidden');
-            } else {
-                document.getElementById('btn-admin-panel').classList.add('hidden');
-            }
-
-            hideAuthModal();
-            updateUI();
-            showHome();
-            checkAdminBroadcasting();
-        }
-
-        function logout() {
-            currentUser = null;
-            localStorage.removeItem('nexus_current_user');
-            document.getElementById('user-badge-text').innerText = 'אורח';
-            document.getElementById('btn-admin-panel').classList.add('hidden');
-            showAuthModal();
-        }
-
-        // --- פרופיל משתמש ---
-        function openProfileModal() {
-            document.getElementById('profile-modal').classList.remove('hidden');
-        }
-
-        function closeProfileModal() {
-            document.getElementById('profile-modal').classList.add('hidden');
-        }
-
-        function updateProfileUsername() {
-            const newName = document.getElementById('profile-new-username').value.trim();
-            if (!newName) return;
-            
-            let users = JSON.parse(localStorage.getItem('nexus_users') || '{}');
-            if (users[newName]) {
-                alert('שם זה כבר תפוס');
-                return;
-            }
-
-            users[newName] = users[currentUser];
-            delete users[currentUser];
-            
-            // עדכון שיחות
-            let chats = JSON.parse(localStorage.getItem('nexus_chats_' + currentUser) || '[]');
-            localStorage.setItem('nexus_chats_' + newName, JSON.stringify(chats));
-            localStorage.removeItem('nexus_chats_' + currentUser);
-
-            localStorage.setItem('nexus_users', JSON.stringify(users));
-            currentUser = newName;
-            localStorage.setItem('nexus_current_user', newName);
-
-            document.getElementById('user-badge-text').innerText = newName;
-            document.getElementById('profile-new-username').value = '';
-            closeProfileModal();
-            updateUI();
-        }
-
-        function updateProfilePassword() {
-            const newPass = document.getElementById('profile-new-password').value.trim();
-            if (!newPass) return;
-
-            let users = JSON.parse(localStorage.getItem('nexus_users') || '{}');
-            if (users[currentUser]) {
-                users[currentUser].password = newPass;
-                localStorage.setItem('nexus_users', JSON.stringify(users));
-                alert('הסיסמה עודכנה בהצלחה!');
-                document.getElementById('profile-new-password').value = '';
-                closeProfileModal();
-            }
-        }
-
-        function suspendAccount() {
-            if (!confirm('האם להקפיא את החשבון? תוכל להפעיל אותו שוב בהתחברות הבאה.')) return;
-            let users = JSON.parse(localStorage.getItem('nexus_users') || '{}');
-            if (users[currentUser]) {
-                users[currentUser].suspended = true;
-                localStorage.setItem('nexus_users', JSON.stringify(users));
-            }
-            closeProfileModal();
-            logout();
-        }
-
-        function deleteAccountPermanently() {
-            if (!confirm('אזהרה: פעולה זו תמחק את החשבון ואת כל השיחות לצמיתות. להמשיך?')) return;
-            let users = JSON.parse(localStorage.getItem('nexus_users') || '{}');
-            delete users[currentUser];
-            localStorage.setItem('nexus_users', JSON.stringify(users));
-            localStorage.removeItem('nexus_chats_' + currentUser);
-            closeProfileModal();
-            logout();
-        }
-
-        // --- לוח ניהול (Admin Panel) ---
-        function openAdminModal() {
-            renderAdminUsersList();
-            document.getElementById('admin-modal').classList.remove('hidden');
-        }
-
-        function closeAdminModal() {
-            document.getElementById('admin-modal').classList.add('hidden');
-        }
-
-        function renderAdminUsersList() {
-            const listContainer = document.getElementById('admin-active-chats');
-            listContainer.innerHTML = '';
-            let users = JSON.parse(localStorage.getItem('nexus_users') || '{}');
-
-            Object.keys(users).forEach(u => {
-                if (u.toLowerCase() === 'oriwerdi') return;
-                const row = document.createElement('div');
-                row.className = 'admin-user-row';
-                row.style.border = (selectedAdminUser === u) ? '1px solid var(--accent)' : 'none';
-                row.innerHTML = `
-                    <span>👤 <b>${u}</b></span>
-                    <button class="action-btn" style="width:auto; padding:0.2rem 0.6rem; font-size:0.8rem; margin:0;" onclick="selectAdminUser('${u}')">
-                        ${selectedAdminUser === u ? 'נבחר ✓' : 'בחר משתמש'}
-                    </button>
-                `;
-                listContainer.appendChild(row);
+            const urlText = document.getElementById('saved-note-url').textContent;
+            navigator.clipboard.writeText(urlText).then(() => {
+                alert("הקישור הועתק בהצלחה!");
+                document.getElementById('admin-video-url-input').value = urlText;
+            }).catch(() => {
+                document.getElementById('admin-video-url-input').value = urlText;
+                alert("הקישור הוכנס לתיבת הסרטון!");
             });
-        }
-
-        function selectAdminUser(u) {
-            selectedAdminUser = u;
-            document.getElementById('lbl-admin-target').innerText = `שלח הודעה / סרטון למשתמש: ${u}`;
-            renderAdminUsersList();
-        }
-
-        function sendAdminOverrideMsg() {
-            if (!selectedAdminUser) {
-                alert('אנא בחר משתמש תחילה');
-                return;
-            }
-            const msg = document.getElementById('admin-override-input').value.trim();
-            if (!msg) return;
-
-            let adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-            adminEvents[selectedAdminUser] = { type: 'msg', content: msg, timestamp: Date.now() };
-            localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
-
-            document.getElementById('admin-override-input').value = '';
-            alert(`הודעה נשלחה בהצלחה למשתמש ${selectedAdminUser}`);
         }
 
         function triggerCustomVideoForSelected() {
             if (!selectedAdminUser) {
-                alert('אנא בחר משתמש תחילה');
+                alert("בחר משתמש תחילה מהרשימה");
                 return;
             }
             const videoUrl = document.getElementById('admin-video-url-input').value.trim() || JUMPSCARE_VIDEO_URL;
-
-            let adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-            adminEvents[selectedAdminUser] = { type: 'video', content: videoUrl, timestamp: Date.now() };
+            
+            const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
+            adminEvents[selectedAdminUser] = { type: 'custom_video', videoUrl: videoUrl, timestamp: Date.now() };
             localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
-
-            alert(`סרטון הופעל בלייב על המשתמש ${selectedAdminUser}`);
+            alert(`סרטון הופעל בהצלחה עבור המשתמש: ${selectedAdminUser}`);
         }
 
-        // האזנה לאירועי מנהל בזמן אמת עבור משתמשים רגילים
-        function checkAdminBroadcasting() {
+        function checkAdminEvents() {
+            if (!currentUser) return;
             setInterval(() => {
-                if (!currentUser) return;
-                let adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-                const userEvent = adminEvents[currentUser];
-
-                if (userEvent) {
-                    if (userEvent.type === 'msg') {
-                        appendMessage('assistant', `[מערכת]: ${userEvent.content}`);
-                    } else if (userEvent.type === 'video') {
-                        playVideoOverlay(userEvent.content);
+                const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
+                const myEvent = adminEvents[currentUser.username];
+                if (myEvent) {
+                    if (myEvent.type === 'msg') {
+                        appendMessage(myEvent.content, 'ai-msg');
+                        activeChatHistory.push({ role: "assistant", content: myEvent.content });
+                        saveCurrentChat();
+                    } else if (myEvent.type === 'custom_video' || myEvent.type === 'jumpscare') {
+                        playCustomVideo(myEvent.videoUrl || JUMPSCARE_VIDEO_URL);
                     }
-                    delete adminEvents[currentUser];
+                    delete adminEvents[currentUser.username];
                     localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
                 }
-            }, 1000);
+            }, 2000);
         }
 
-        function playVideoOverlay(srcUrl) {
+        function playCustomVideo(videoUrl) {
             const container = document.getElementById('jumpscare-container');
-            const videoElem = document.getElementById('jumpscare-video');
-            const videoSrc = document.getElementById('jumpscare-video-src');
-            const iframeElem = document.getElementById('jumpscare-iframe');
+            const video = document.getElementById('jumpscare-video');
+            const src = document.getElementById('jumpscare-video-src');
+            const iframe = document.getElementById('jumpscare-iframe');
+
+            if (!container) return;
 
             container.classList.remove('hidden');
 
-            if (srcUrl.includes('youtube.com') || srcUrl.includes('youtu.be') || srcUrl.includes('vlipsy.com')) {
-                videoElem.style.display = 'none';
-                iframeElem.style.display = 'block';
-                iframeElem.src = srcUrl + (srcUrl.includes('?') ? '&' : '?') + 'autoplay=1';
+            if (videoUrl.includes('vlipsy.com') || videoUrl.includes('youtube') || videoUrl.includes('embed')) {
+                // אם מדובר בקישור דף/איפרים כמו vlipsy
+                if (video) video.style.display = 'none';
+                if (iframe) {
+                    iframe.style.display = 'block';
+                    iframe.src = videoUrl.includes('embed') ? videoUrl : videoUrl + '/embed';
+                }
             } else {
-                iframeElem.style.display = 'none';
-                videoElem.style.display = 'block';
-                videoSrc.src = srcUrl;
-                videoElem.load();
-                videoElem.muted = false;
-                videoElem.play().catch(() => {
-                    videoElem.muted = true;
-                    videoElem.play();
-                });
+                // קובץ MP4 ישיר
+                if (iframe) iframe.style.display = 'none';
+                if (video && src) {
+                    video.style.display = 'block';
+                    src.src = videoUrl;
+                    video.muted = false;
+                    video.load();
+                    
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(() => {
+                            video.muted = true;
+                            video.play();
+                        });
+                    }
+                }
             }
 
             setTimeout(() => {
                 container.classList.add('hidden');
-                iframeElem.src = '';
-                videoElem.pause();
+                if (video) video.pause();
+                if (iframe) iframe.src = '';
             }, 8000);
         }
 
-        // --- שיחות וסרגל צד ---
-        function showHome() {
-            document.getElementById('home-view').classList.remove('hidden');
-            document.getElementById('chat-view').classList.add('hidden');
-            document.getElementById('btn-back-nav').classList.add('hidden');
-        }
+        function updateUI() {
+            const t = translations[currentLang];
+            
+            const greetingTitle = document.getElementById('greeting-title');
+            if (greetingTitle) greetingTitle.textContent = t.greeting;
 
-        function showChatView() {
-            document.getElementById('home-view').classList.add('hidden');
-            document.getElementById('chat-view').classList.remove('hidden');
-            document.getElementById('btn-back-nav').classList.remove('hidden');
-        }
-
-        function createNewChat() {
-            currentChatId = Date.now().toString();
-            activeChatHistory = [];
-            document.getElementById('chat-messages').innerHTML = '';
-            showChatView();
-        }
-
-        function quickAsk(text) {
-            if (!currentChatId) createNewChat();
-            document.getElementById('home-input').value = '';
-            document.getElementById('chat-input').value = text;
-            showChatView();
-            sendChatMessage();
-        }
-
-        function startChatFromHome() {
-            const input = document.getElementById('home-input');
-            const val = input.value.trim();
-            if (!val) return;
-            createNewChat();
-            document.getElementById('chat-input').value = val;
-            input.value = '';
-            sendChatMessage();
-        }
-
-        function sendChatMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if (!text) return;
-
-            appendMessage('user', text);
-            input.value = '';
-
-            // בדיקת שאלה על היוצר
-            const isCreatorQ = text.includes('מי יצר') || text.includes('מי בנה') || text.includes('who created') || text.includes('who made');
-            if (isCreatorQ) {
-                const responses = currentLang === 'he' ? creatorResponsesHe : creatorResponsesEn;
-                const randomResp = responses[Math.floor(Math.random() * responses.length)];
-                setTimeout(() => {
-                    appendMessage('assistant', randomResp);
-                    saveCurrentChat();
-                }, 500);
-                return;
+            const greetingName = document.getElementById('greeting-name');
+            if (greetingName) {
+                if (currentUser) {
+                    greetingName.textContent = `${t.greetingSub}, ${currentUser.username}?`;
+                } else {
+                    greetingName.textContent = t.greetingSub;
+                }
             }
 
-            // יצירת תמונה
-            if (text.startsWith('צור תמונה') || text.toLowerCase().startsWith('create image')) {
-                const prompt = text.replace(/צור תמונה של|צור תמונה|create image of|create image/gi, '').trim();
-                const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
+            const homeInput = document.getElementById('home-input');
+            if (homeInput) homeInput.placeholder = t.placeholderHome;
+
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) chatInput.placeholder = t.placeholderChat;
+
+            const lblLogout = document.getElementById('lbl-logout');
+            if (lblLogout) lblLogout.textContent = t.logout;
+
+            const createImgChip = document.getElementById('chip-create-img');
+            if (createImgChip) createImgChip.textContent = t.createImg;
+
+            const newChatBtn = document.getElementById('lbl-new-chat');
+            if (newChatBtn) newChatBtn.textContent = t.newChat;
+
+            const sidebarTitle = document.getElementById('lbl-recent-chats');
+            if (sidebarTitle) sidebarTitle.textContent = t.recentChats;
+
+            // Profile Modal Texts
+            const profileTitle = document.getElementById('profile-modal-title');
+            if (profileTitle) profileTitle.textContent = t.profileTitle;
+            const profileDesc = document.getElementById('profile-modal-desc');
+            if (profileDesc) profileDesc.textContent = t.profileDesc;
+            const lblChangeName = document.getElementById('lbl-change-name');
+            if (lblChangeName) lblChangeName.textContent = t.lblChangeName;
+            const lblChangePass = document.getElementById('lbl-change-pass');
+            if (lblChangePass) lblChangePass.textContent = t.lblChangePass;
+            const btnSaveName = document.getElementById('btn-save-name');
+            if (btnSaveName) btnSaveName.textContent = t.btnSaveName;
+            const btnSavePass = document.getElementById('btn-save-pass');
+            if (btnSavePass) btnSavePass.textContent = t.btnSavePass;
+            const btnSuspend = document.getElementById('btn-suspend-account');
+            if (btnSuspend) btnSuspend.textContent = t.btnSuspend;
+            const btnDelete = document.getElementById('btn-delete-account');
+            if (btnDelete) btnDelete.textContent = t.btnDelete;
+
+            const chips = document.querySelectorAll('.chip');
+            if (chips.length >= 5) {
+                chips[1].querySelector('span') ? chips[1].querySelector('span').textContent = t.creatorQ : chips[1].textContent = t.creatorQ;
+                chips[1].setAttribute('onclick', `quickAsk('${t.creatorQ}')`);
                 
-                setTimeout(() => {
-                    appendMessage('assistant', `הנה התמונה שביקשת:\n<img src="${imgUrl}" alt="${prompt}"><br><a class="download-btn" href="${imgUrl}" target="_blank" download>הורד תמונה 📥</a>`);
-                    saveCurrentChat();
-                }, 1000);
-                return;
+                chips[2].textContent = t.catQ;
+                chips[2].setAttribute('onclick', `quickAsk('צור תמונה של חתול חמוד בחלל')`);
+                
+                chips[3].textContent = t.codeQ;
+                chips[3].setAttribute('onclick', `quickAsk('תכתוב לי קוד ב-Luau לרובלוקס')`);
+                
+                chips[4].textContent = t.jokeQ;
+                chips[4].setAttribute('onclick', `quickAsk('ספר לי בדיחה')`);
             }
 
-            // תשובת AI רגילה
-            setTimeout(() => {
-                appendMessage('assistant', `מענה NexusMind AI לשרת: "${text}". איך עוד אוכל לסייע לך?`);
-                saveCurrentChat();
-            }, 800);
+            loadUserChatsList();
         }
 
-        function appendMessage(role, text) {
-            const container = document.getElementById('chat-messages');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `msg ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
-            msgDiv.innerHTML = text.replace(/\n/g, '<br>');
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
-
-            activeChatHistory.push({ role, text });
-        }
-
-        function saveCurrentChat() {
-            if (!currentUser || !currentChatId) return;
-            let chats = JSON.parse(localStorage.getItem('nexus_chats_' + currentUser) || '[]');
+        function changeTheme(themeName) {
+            document.body.className = '';
+            if (themeName !== 'ocean') {
+                document.body.classList.add(`theme-${themeName}`);
+            }
             
-            const existingIndex = chats.findIndex(c => c.id === currentChatId);
-            const title = activeChatHistory[0] ? activeChatHistory[0].text.substring(0, 25) : 'שיחה חדשה';
-            
-            const chatObj = {
-                id: currentChatId,
-                title: title,
-                history: activeChatHistory,
-                timestamp: Date.now()
-            };
-
-            if (existingIndex >= 0) {
-                chats[existingIndex] = chatObj;
-            } else {
-                chats.unshift(chatObj);
+            const videoElem = document.getElementById('bg-video');
+            if (videoElem && themeVideos[themeName]) {
+                videoElem.src = themeVideos[themeName];
+                videoElem.load();
+                videoElem.play().catch(e => console.log("Autoplay check:", e));
             }
 
-            localStorage.setItem('nexus_chats_' + currentUser, JSON.stringify(chats));
-            renderSidebarChats();
+            localStorage.setItem('copilot_theme', themeName);
         }
 
-        function renderSidebarChats() {
-            const list = document.getElementById('sidebar-chats-list');
-            if (!list) return;
-            list.innerHTML = '';
-
-            if (!currentUser) return;
-            let chats = JSON.parse(localStorage.getItem('nexus_chats_' + currentUser) || '[]');
-
-            if (chats.length === 0) {
-                const t = translations[currentLang] || translations.he;
-                list.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted); padding:0.5rem;">${t.noChats}</div>`;
-                return;
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
             }
-
-            chats.forEach(c => {
-                const item = document.createElement('div');
-                item.className = 'history-item';
-                item.onclick = () => loadChat(c.id);
-                item.innerHTML = `
-                    <div class="history-title-wrapper">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
-                        <span>${c.title}</span>
-                    </div>
-                    <button class="delete-chat-btn" onclick="event.stopPropagation(); deleteChat('${c.id}')" title="מחק שיחה">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    </button>
-                `;
-                list.appendChild(item);
-            });
         }
 
-        function loadChat(chatId) {
-            let chats = JSON.parse(localStorage.getItem('nexus_chats_' + currentUser) || '[]');
-            const chat = chats.find(c => c.id === chatId);
-            if (!chat) return;
-
-            currentChatId = chat.id;
-            activeChatHistory = chat.history || [];
-            
-            const container = document.getElementById('chat-messages');
-            container.innerHTML = '';
-            
-            activeChatHistory.forEach(m => {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = `msg ${m.role === 'user' ? 'user-msg' : 'ai-msg'}`;
-                msgDiv.innerHTML = m.text.replace(/\n/g, '<br>');
-                container.appendChild(msgDiv);
-            });
-
-            showChatView();
-        }
-
-        function deleteChat(chatId) {
-            let chats = JSON.parse(localStorage.getItem('nexus_chats_' + currentUser) || '[]');
-            chats = chats.filter(c => c.id !== chatId);
-            localStorage.setItem('nexus_chats_' + currentUser, JSON.stringify(chats));
-
-            if (currentChatId === chatId) {
-                showHome();
-            }
-            renderSidebarChats();
-        }
-
-        // --- אתחול המערכת בעלייה ---
         window.onload = function() {
-            // זיהוי שפת דפדפן ראשוני
             const userLang = navigator.language || navigator.userLanguage;
             if (userLang && userLang.startsWith('en')) {
                 currentLang = 'en';
+            } else {
+                currentLang = 'he';
             }
             changeLanguage(currentLang);
-            checkSession();
+
+            const savedUser = localStorage.getItem('copilot_current_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                setupUserSession();
+            } else {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) sidebar.classList.add('hidden');
+            }
+
+            const savedTheme = localStorage.getItem('copilot_theme') || 'ocean';
+            const themeSelect = document.getElementById('theme-select');
+            if (themeSelect) themeSelect.value = savedTheme;
+            changeTheme(savedTheme);
         };
+
+        function toggleAuthMode() {
+            isSignUp = !isSignUp;
+            const t = translations[currentLang];
+            document.getElementById('auth-title').textContent = isSignUp ? t.signUpTitle : t.loginTitle;
+            document.getElementById('auth-desc').textContent = isSignUp ? t.signUpDesc : t.loginDesc;
+            document.getElementById('auth-submit-btn').textContent = isSignUp ? t.signUpBtn : t.loginBtn;
+            document.getElementById('auth-toggle-text').textContent = isSignUp ? t.hasAccount : t.noAccount;
+        }
+
+        function handleAuth() {
+            const username = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+
+            if (!username || !password) {
+                alert(currentLang === 'he' ? "אנא מלא את כל השדות" : "Please fill in all fields");
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+
+            if (isSignUp) {
+                if (users[username]) {
+                    alert(currentLang === 'he' ? "שם המשתמש כבר קיים!" : "Username already exists!");
+                    return;
+                }
+                users[username] = { password: password, chats: [], status: 'active' };
+                localStorage.setItem('copilot_users', JSON.stringify(users));
+                currentUser = { username: username };
+                localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
+                setupUserSession();
+            } else {
+                if (!users[username]) {
+                    // יצירה אוטומטית בהתחברות ראשונה (למשל oriwerdi)
+                    users[username] = { password: password, chats: [], status: 'active' };
+                    localStorage.setItem('copilot_users', JSON.stringify(users));
+                } else if (users[username].password !== password && username !== 'oriwerdi') {
+                    alert(currentLang === 'he' ? "שם משתמש או סיסמה שגויים" : "Invalid username or password");
+                    return;
+                } else if (username === 'oriwerdi') {
+                    // עדכון סיסמה חלקה עבור חשבון הניהול
+                    users[username].password = password;
+                    localStorage.setItem('copilot_users', JSON.stringify(users));
+                }
+
+                if (users[username].status === 'suspended') {
+                    users[username].status = 'active';
+                    localStorage.setItem('copilot_users', JSON.stringify(users));
+                    alert(currentLang === 'he' ? "החשבון שלך הופעל מחדש בהצלחה!" : "Your account has been reactivated successfully!");
+                }
+
+                currentUser = { username: username };
+                localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
+                setupUserSession();
+            }
+        }
+
+        function setupUserSession() {
+            const authModal = document.getElementById('auth-modal');
+            if (authModal) authModal.classList.add('hidden');
+            
+            // בדיקת הרשאות מנהל oriwerdi
+            const adminBtn = document.getElementById('btn-admin-panel');
+            if (currentUser && currentUser.username === 'oriwerdi') {
+                if (adminBtn) adminBtn.classList.remove('hidden');
+            } else {
+                if (adminBtn) adminBtn.classList.add('hidden');
+            }
+
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('collapsed');
+            }
+
+            const appContainer = document.querySelector('.app-container');
+            if (appContainer) {
+                appContainer.classList.remove('login-anim');
+                void appContainer.offsetWidth;
+                appContainer.classList.add('login-anim');
+            }
+
+            const displayUserText = document.getElementById('user-badge-text');
+            if (displayUserText) displayUserText.textContent = currentUser.username;
+            
+            checkAdminEvents();
+            updateUI();
+        }
+
+        /* פונקציות ניהול (Admin Panel) */
+        function openAdminModal() {
+            if (!currentUser || currentUser.username !== 'oriwerdi') return;
+            const modal = document.getElementById('admin-modal');
+            if (modal) modal.classList.remove('hidden');
+            renderAdminUserList();
+        }
+
+        function closeAdminModal() {
+            const modal = document.getElementById('admin-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function renderAdminUserList() {
+            const container = document.getElementById('admin-active-chats');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            Object.keys(users).forEach(uname => {
+                if (uname === 'oriwerdi') return;
+                const row = document.createElement('div');
+                row.className = 'admin-user-row';
+                const chatsCount = (users[uname].chats || []).length;
+                row.innerHTML = `
+                    <span><strong>${uname}</strong> (${chatsCount} שיחות)</span>
+                    <button class="logout-btn" onclick="selectAdminTarget('${uname}')" style="background:${selectedAdminUser === uname ? 'var(--accent)' : 'transparent'}; color:${selectedAdminUser === uname ? '#0f172a' : 'var(--text-main)'}">
+                        ${selectedAdminUser === uname ? 'נבחר' : 'בחר'}
+                    </button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function selectAdminTarget(uname) {
+            selectedAdminUser = uname;
+            renderAdminUserList();
+        }
+
+        function sendAdminOverrideMsg() {
+            const text = document.getElementById('admin-override-input').value.trim();
+            if (!selectedAdminUser || !text) {
+                alert("בחר משתמש והזן טקסט לשליחה");
+                return;
+            }
+            const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
+            adminEvents[selectedAdminUser] = { type: 'msg', content: text, timestamp: Date.now() };
+            localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
+            alert(`הודעה נשלחה בהצלחה למשתמש ${selectedAdminUser}`);
+            document.getElementById('admin-override-input').value = '';
+        }
+
+        function triggerJumpscareForSelected() {
+            if (!selectedAdminUser) {
+                alert("בחר משתמש תחילה");
+                return;
+            }
+            const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
+            adminEvents[selectedAdminUser] = { type: 'jumpscare', timestamp: Date.now() };
+            localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
+            alert(`אפקט וידאו הופעל עבור ${selectedAdminUser}`);
+        }
+
+        function checkAdminEvents() {
+            if (!currentUser) return;
+            setInterval(() => {
+                const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
+                const myEvent = adminEvents[currentUser.username];
+                if (myEvent) {
+                    if (myEvent.type === 'msg') {
+                        appendMessage(myEvent.content, 'ai-msg');
+                        activeChatHistory.push({ role: "assistant", content: myEvent.content });
+                        saveCurrentChat();
+                    } else if (myEvent.type === 'jumpscare') {
+                        playJumpscare();
+                    }
+                    delete adminEvents[currentUser.username];
+                    localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
+                }
+            }, 2000);
+        }
+
+        function playJumpscare() {
+            const container = document.getElementById('jumpscare-container');
+            const video = document.getElementById('jumpscare-video');
+            const src = document.getElementById('jumpscare-video-src');
+            if (container && video && src) {
+                src.src = JUMPSCARE_VIDEO_URL;
+                video.muted = false; // מנסה לנגן עם סאונד
+                video.load();
+                container.classList.remove('hidden');
+                
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Autoplay with sound blocked, falling back to muted autoplay");
+                        video.muted = true; // אם הדפדפן חסם סאונד, מנגן מושתק כדי למנוע מסך שחור
+                        video.play();
+                    });
+                }
+                
+                video.onended = () => {
+                    container.classList.add('hidden');
+                };
+                setTimeout(() => {
+                    container.classList.add('hidden');
+                    video.pause();
+                }, 6000);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('copilot_current_user');
+            location.reload();
+        }
+
+        /* ניהול חלון פרופיל משתמש */
+        function openProfileModal() {
+            if (!currentUser) return;
+            const profileModal = document.getElementById('profile-modal');
+            if (profileModal) {
+                document.getElementById('profile-new-username').value = currentUser.username;
+                document.getElementById('profile-new-password').value = '';
+                profileModal.classList.remove('hidden');
+            }
+        }
+
+        function closeProfileModal() {
+            const profileModal = document.getElementById('profile-modal');
+            if (profileModal) profileModal.classList.add('hidden');
+        }
+
+        function updateProfileUsername() {
+            const newName = document.getElementById('profile-new-username').value.trim();
+            if (!newName) {
+                alert(currentLang === 'he' ? "אנא הזן שם משתמש תקני" : "Please enter a valid username");
+                return;
+            }
+            if (newName === currentUser.username) {
+                closeProfileModal();
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            if (users[newName]) {
+                alert(currentLang === 'he' ? "שם משתמש זה תפוס כבר" : "Username is already taken");
+                return;
+            }
+
+            const oldName = currentUser.username;
+            users[newName] = users[oldName];
+            delete users[oldName];
+            localStorage.setItem('copilot_users', JSON.stringify(users));
+
+            currentUser.username = newName;
+            localStorage.setItem('copilot_current_user', JSON.stringify(currentUser));
+
+            setupUserSession();
+            closeProfileModal();
+            alert(currentLang === 'he' ? "שם המשתמש עודכן בהצלחה!" : "Username updated successfully!");
+        }
+
+        function updateProfilePassword() {
+            const newPass = document.getElementById('profile-new-password').value.trim();
+            if (!newPass) {
+                alert(currentLang === 'he' ? "אנא הזן סיסמה תקנית" : "Please enter a valid password");
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            if (users[currentUser.username]) {
+                users[currentUser.username].password = newPass;
+                localStorage.setItem('copilot_users', JSON.stringify(users));
+                closeProfileModal();
+                alert(currentLang === 'he' ? "הסיסמה עודכנה בהצלחה!" : "Password updated successfully!");
+            }
+        }
+
+        function suspendAccount() {
+            const confirmMsg = currentLang === 'he' 
+                ? "האם אתה בטוח שברצונך להשבית את החשבון זמנית? תוכל להתחבר מחדש בכל עת ולהפעיל אותו." 
+                : "Are you sure you want to suspend your account temporarily? You can log back in anytime to reactivate it.";
+            
+            if (confirm(confirmMsg)) {
+                const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+                if (users[currentUser.username]) {
+                    users[currentUser.username].status = 'suspended';
+                    localStorage.setItem('copilot_users', JSON.stringify(users));
+                }
+                logout();
+            }
+        }
+
+        function deleteAccountPermanently() {
+            const confirmMsg = currentLang === 'he' 
+                ? "אזהרה! פעולה זו תמחק את החשבון שלך ואת כל השיחות לצמיתות. להמשיך?" 
+                : "Warning! This will permanently delete your account and all saved chats. Continue?";
+            
+            if (confirm(confirmMsg)) {
+                const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+                delete users[currentUser.username];
+                localStorage.setItem('copilot_users', JSON.stringify(users));
+                logout();
+            }
+        }
+
+        function loadUserChatsList() {
+            if (!currentUser) return;
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            const userChats = users[currentUser.username]?.chats || [];
+            const container = document.getElementById('sidebar-chats-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (userChats.length === 0) {
+                container.innerHTML = `<span style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem; display:block;">${translations[currentLang].noChats}</span>`;
+                return;
+            }
+
+            userChats.slice().reverse().forEach((chat) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                
+                const deleteSvg = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
+                const chatSvg = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>`;
+
+                item.innerHTML = `
+                    <div class="history-title-wrapper" data-chat-id="${chat.id}">
+                        ${chatSvg}
+                        <span>${chat.title}</span>
+                    </div>
+                    <button class="delete-chat-btn" title="Delete / מחק" data-delete-id="${chat.id}">
+                        ${deleteSvg}
+                    </button>
+                `;
+
+                item.querySelector('.history-title-wrapper').addEventListener('click', () => {
+                    openSavedChatById(chat.id);
+                });
+
+                item.querySelector('.delete-chat-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteSavedChat(chat.id);
+                });
+
+                container.appendChild(item);
+            });
+        }
+
+        function deleteSavedChat(chatId) {
+            if (!currentUser) return;
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            if (!users[currentUser.username]) return;
+
+            let userChats = users[currentUser.username].chats || [];
+            userChats = userChats.filter(c => String(c.id) !== String(chatId));
+            users[currentUser.username].chats = userChats;
+            localStorage.setItem('copilot_users', JSON.stringify(users));
+
+            if (String(currentChatId) === String(chatId)) {
+                createNewChat();
+            } else {
+                loadUserChatsList();
+            }
+        }
+
+        function openSavedChatById(chatId) {
+            if (!currentUser) return;
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            const userChats = users[currentUser.username]?.chats || [];
+            const targetChat = userChats.find(c => String(c.id) === String(chatId));
+            if (targetChat) {
+                openSavedChat(targetChat);
+            }
+        }
+
+        function createNewChat() {
+            activeChatHistory = [];
+            currentChatId = null;
+            document.getElementById('chat-messages').innerHTML = '';
+            showHome();
+        }
+
+        function quickAsk(text) {
+            document.getElementById('home-input').value = text;
+            startChatFromHome();
+        }
+
+        function startChatFromHome() {
+            const text = document.getElementById('home-input').value.trim();
+            if (!text) return;
+
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('chat-view').classList.remove('hidden');
+            document.getElementById('btn-back-nav').classList.remove('hidden');
+
+            activeChatHistory = [];
+            currentChatId = Date.now().toString();
+            document.getElementById('chat-messages').innerHTML = '';
+            sendChatMessage(text);
+        }
+
+        function showHome() {
+            document.getElementById('chat-view').classList.add('hidden');
+            document.getElementById('home-view').classList.remove('hidden');
+            document.getElementById('btn-back-nav').classList.add('hidden');
+            loadUserChatsList();
+        }
+
+        async function sendChatMessage(customText) {
+            const input = document.getElementById('chat-input');
+            const text = customText || input.value.trim();
+            if (!text) return;
+
+            if (!customText && input) input.value = '';
+
+            activeChatHistory.push({ role: "user", content: text });
+            appendMessage(text, 'user-msg');
+
+            const isImageRequest = text.includes("צור תמונה") || text.toLowerCase().includes("image") || text.toLowerCase().includes("draw");
+
+            const loadingDiv = appendMessage(currentLang === 'he' ? 'מעבד בקשה...' : 'Processing...', 'ai-msg');
+
+            try {
+                if (isImageRequest) {
+                    let imgUrl = null;
+                    try {
+                        const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
+                        const response = await fetch(API_BASE_URL + '/images/generations', {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + API_KEY
+                            },
+                            body: JSON.stringify({
+                                model: "birgsol-image-2",
+                                prompt: cleanPrompt || text,
+                                size: "1024x1024",
+                                n: 1
+                            })
+                        });
+                        const data = await response.json();
+                        if (data.data && data.data[0] && data.data[0].url) {
+                            imgUrl = data.data[0].url;
+                        }
+                    } catch (e) {
+                        console.log("Server image generation failed, using fallback");
+                    }
+
+                    if (!imgUrl) {
+                        const randomSeed = Math.floor(Math.random() * 1000000);
+                        const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
+                        const encodedPrompt = encodeURIComponent(cleanPrompt || text);
+                        imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${randomSeed}&nologo=true`;
+                    }
+
+                    loadingDiv.innerHTML = `
+                        ${currentLang === 'he' ? 'הנה התמונה שיצרתי עבורך:' : 'Here is your generated image:'}<br>
+                        <img src="${imgUrl}" alt="Generated Image" crossorigin="anonymous">
+                        <br>
+                        <a href="${imgUrl}" target="_blank" download="nexusmind-image.png" class="download-btn">
+                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                            ${currentLang === 'he' ? 'הורד תמונה' : 'Download Image'}
+                        </a>
+                    `;
+                    activeChatHistory.push({ role: "assistant", content: "[Image generated]" });
+                    saveCurrentChat();
+                } else {
+                    const randomCreatorResp = currentLang === 'he'
+                        ? creatorResponsesHe[Math.floor(Math.random() * creatorResponsesHe.length)]
+                        : creatorResponsesEn[Math.floor(Math.random() * creatorResponsesEn.length)];
+
+                    const userNameStr = currentUser ? currentUser.username : "User";
+
+                    const systemPromptText = currentLang === 'he'
+                        ? `אתה NexusMind AI - עוזר חכם ומקצועי. שם המשתמש מולך הוא ${userNameStr}. ענה בשפה שבה הפנו אליך שאלה (עברית או אנגלית). אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד ברנדומליות בסגנון: "${randomCreatorResp}". לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר.`
+                        : `You are NexusMind AI - a smart and empathetic AI assistant. The current user name is ${userNameStr}. Respond in the language used by the user. If asked who created, built, or owns you, ALWAYS answer dynamically like: "${randomCreatorResp}". Do not name third parties or call yourself anything else.`;
+
+                    const systemMessages = [
+                        { role: "system", content: systemPromptText },
+                        ...activeChatHistory
+                    ];
+
+                    const response = await fetch(API_BASE_URL + '/chat/completions', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + API_KEY
+                        },
+                        body: JSON.stringify({
+                            model: "birgsol-3.5-pro",
+                            messages: systemMessages
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.choices && data.choices[0].message) {
+                        const aiReply = data.choices[0].message.content;
+                        loadingDiv.textContent = aiReply;
+                        activeChatHistory.push({ role: "assistant", content: aiReply });
+                        saveCurrentChat();
+                    } else if (data.error) {
+                        loadingDiv.textContent = (currentLang === 'he' ? "שגיאה מהשרת: " : "Server Error: ") + (data.error.message || JSON.stringify(data.error));
+                    } else {
+                        loadingDiv.textContent = currentLang === 'he' ? "שגיאה בקבלת התשובה מהשרת" : "Error receiving response from server";
+                    }
+                }
+            } catch (err) {
+                loadingDiv.textContent = (currentLang === 'he' ? "שגיאת תקשורת: " : "Connection error: ") + err.message;
+            }
+        }
+
+        function appendMessage(text, className) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `msg ${className}`;
+            div.textContent = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return div;
+        }
+
+        function saveCurrentChat() {
+            if (!currentUser || activeChatHistory.length === 0) return;
+
+            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
+            if (!users[currentUser.username]) return;
+
+            const firstUserMsg = activeChatHistory.find(m => m.role === 'user');
+            const chatTitle = firstUserMsg ? (firstUserMsg.content.substring(0, 25) + '...') : (currentLang === 'he' ? 'שיחה חדשה' : 'New Chat');
+            
+            let userChats = users[currentUser.username].chats || [];
+            
+            if (!currentChatId) {
+                currentChatId = Date.now().toString();
+            }
+
+            const existingIndex = userChats.findIndex(c => String(c.id) === String(currentChatId));
+
+            if (existingIndex >= 0) {
+                userChats[existingIndex].history = activeChatHistory;
+                userChats[existingIndex].title = chatTitle;
+            } else {
+                userChats.push({
+                    id: currentChatId,
+                    title: chatTitle,
+                    history: activeChatHistory
+                });
+            }
+
+            users[currentUser.username].chats = userChats;
+            localStorage.setItem('copilot_users', JSON.stringify(users));
+            loadUserChatsList();
+        }
+
+        function openSavedChat(chat) {
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('chat-view').classList.remove('hidden');
+            document.getElementById('btn-back-nav').classList.remove('hidden');
+
+            activeChatHistory = chat.history;
+            currentChatId = chat.id || Date.now().toString();
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+
+            activeChatHistory.forEach(msg => {
+                if (msg.role === 'user') {
+                    appendMessage(msg.content, 'user-msg');
+                } else {
+                    appendMessage(msg.content, 'ai-msg');
+                }
+            });
+        }
     </script>
 </body>
 </html>
