@@ -1203,29 +1203,86 @@
             if (tab === 'notes') renderNotes();
         }
 
-        function renderAdminUserList() {
+        /* ---------- Firebase Realtime Database (REST) ---------- */
+        const DB_URL = "https://nexusmind-2f974-default-rtdb.firebaseio.com";
+
+        // מפתח בטוח ל-Firebase משם משתמש (אסור . $ # [ ] /)
+        function userKey(name) {
+            return Array.from(new TextEncoder().encode(name))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function dbGet(path) {
+            const r = await fetch(`${DB_URL}/${path}.json`);
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }
+
+        async function dbPut(path, data) {
+            const r = await fetch(`${DB_URL}/${path}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }
+
+        async function dbDelete(path) {
+            const r = await fetch(`${DB_URL}/${path}.json`, { method: 'DELETE', keepalive: true });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+        }
+
+        // רושם את המשתמש ברשימה המשותפת כדי שהאדמין יראה אותו מכל מכשיר
+        function registerPresence() {
+            if (!currentUser) return;
+            dbPut('userlist/' + userKey(currentUser.username), {
+                name: currentUser.username,
+                lastSeen: Date.now()
+            }).catch(() => {});
+        }
+
+        async function renderAdminUserList() {
             const container = document.getElementById('admin-active-chats');
             if (!container) return;
-            container.innerHTML = '';
+            container.textContent = 'טוען...';
 
-            const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
-            Object.keys(users).forEach(uname => {
-                if (uname === 'oriwerdi') return;
+            let list = {};
+            try {
+                list = (await dbGet('userlist')) || {};
+            } catch (e) {
+                container.textContent = 'שגיאת חיבור ל-Firebase: ' + e.message;
+                return;
+            }
+
+            container.innerHTML = '';
+            const entries = Object.values(list)
+                .filter(u => u && u.name && u.name !== 'oriwerdi')
+                .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+
+            if (!entries.length) {
+                container.textContent = 'אין משתמשים עדיין';
+                return;
+            }
+
+            entries.forEach(u => {
                 const row = document.createElement('div');
                 row.className = 'admin-user-row';
-                const chatsCount = (users[uname].chats || []).length;
 
                 const label = document.createElement('span');
                 const strong = document.createElement('strong');
-                strong.textContent = uname;
-                label.append(strong, ` (${chatsCount} שיחות)`);
+                strong.textContent = u.name;
+                const seen = document.createElement('small');
+                seen.style.cssText = 'color:var(--text-muted); margin-inline-start:0.5rem;';
+                seen.textContent = u.lastSeen ? new Date(u.lastSeen).toLocaleString() : '';
+                label.append(strong, seen);
 
                 const btn = document.createElement('button');
                 btn.className = 'logout-btn';
-                btn.style.background = selectedAdminUser === uname ? 'var(--accent)' : 'transparent';
-                btn.style.color = selectedAdminUser === uname ? '#0f172a' : 'var(--text-main)';
-                btn.textContent = selectedAdminUser === uname ? 'נבחר' : 'בחר';
-                btn.onclick = () => selectAdminTarget(uname);
+                btn.style.background = selectedAdminUser === u.name ? 'var(--accent)' : 'transparent';
+                btn.style.color = selectedAdminUser === u.name ? '#0f172a' : 'var(--text-main)';
+                btn.textContent = selectedAdminUser === u.name ? 'נבחר' : 'בחר';
+                btn.onclick = () => selectAdminTarget(u.name);
 
                 row.append(label, btn);
                 container.appendChild(row);
@@ -1237,47 +1294,58 @@
             renderAdminUserList();
         }
 
-        function sendAdminOverrideMsg() {
+        async function sendAdminOverrideMsg() {
             const text = document.getElementById('admin-override-input').value.trim();
             if (!selectedAdminUser || !text) {
                 alert("בחר משתמש והזן טקסט לשליחה");
                 return;
             }
-            const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-            adminEvents[selectedAdminUser] = { type: 'msg', content: text, timestamp: Date.now() };
-            localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
-            alert(`הודעה נשלחה בהצלחה למשתמש ${selectedAdminUser}`);
-            document.getElementById('admin-override-input').value = '';
+            try {
+                await dbPut('events/' + userKey(selectedAdminUser), { type: 'msg', content: text, timestamp: Date.now() });
+                alert(`הודעה נשלחה בהצלחה למשתמש ${selectedAdminUser}`);
+                document.getElementById('admin-override-input').value = '';
+            } catch (e) {
+                alert('שגיאה בשליחה: ' + e.message);
+            }
         }
 
         /* ---------- פתקים ---------- */
-        function getNotes() {
-            try { return JSON.parse(localStorage.getItem('nexus_admin_notes') || '[]'); }
-            catch (e) { return []; }
+        async function getNotes() {
+            try {
+                const obj = (await dbGet('notes')) || {};
+                return Object.values(obj).sort((a, b) => b.id - a.id);
+            } catch (e) { return null; }
         }
 
-        function addNote() {
+        async function addNote() {
             const input = document.getElementById('note-input');
             const text = input.value.trim();
             if (!text) return;
-            const notes = getNotes();
-            notes.unshift({ id: Date.now(), text: text, time: new Date().toLocaleString() });
-            localStorage.setItem('nexus_admin_notes', JSON.stringify(notes));
-            input.value = '';
+            const id = Date.now();
+            try {
+                await dbPut('notes/n' + id, { id: id, text: text, time: new Date().toLocaleString() });
+                input.value = '';
+                renderNotes();
+            } catch (e) {
+                alert('שגיאה בשמירת הפתק: ' + e.message);
+            }
+        }
+
+        async function deleteNote(id) {
+            try { await dbDelete('notes/n' + id); } catch (e) { alert('שגיאה במחיקה: ' + e.message); }
             renderNotes();
         }
 
-        function deleteNote(id) {
-            const notes = getNotes().filter(n => n.id !== id);
-            localStorage.setItem('nexus_admin_notes', JSON.stringify(notes));
-            renderNotes();
-        }
-
-        function renderNotes() {
+        async function renderNotes() {
             const list = document.getElementById('notes-list');
             if (!list) return;
+            list.textContent = 'טוען...';
+            const notes = await getNotes();
             list.innerHTML = '';
-            const notes = getNotes();
+            if (notes === null) {
+                list.textContent = 'שגיאת חיבור ל-Firebase';
+                return;
+            }
             if (!notes.length) {
                 list.innerHTML = '<span style="color:var(--text-muted); font-size:0.85rem;">אין פתקים עדיין</span>';
                 return;
@@ -1320,7 +1388,7 @@
             playJumpscare(url);
         }
 
-        function triggerJumpscareForSelected() {
+        async function triggerJumpscareForSelected() {
             if (!selectedAdminUser) {
                 alert("בחר משתמש תחילה");
                 return;
@@ -1331,10 +1399,12 @@
                 return;
             }
             localStorage.setItem('nexus_jumpscare_url', url);
-            const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-            adminEvents[selectedAdminUser] = { type: 'jumpscare', url: url, timestamp: Date.now() };
-            localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
-            alert(`אפקט וידאו הופעל עבור ${selectedAdminUser}`);
+            try {
+                await dbPut('events/' + userKey(selectedAdminUser), { type: 'jumpscare', url: url, timestamp: Date.now() });
+                alert(`אפקט וידאו הופעל עבור ${selectedAdminUser}`);
+            } catch (e) {
+                alert('שגיאה בשליחה: ' + e.message);
+            }
         }
 
         function stopJumpscare() {
@@ -1403,21 +1473,36 @@
 
         function checkAdminEvents() {
             if (!currentUser) return;
+            registerPresence();
             if (adminEventsInterval) clearInterval(adminEventsInterval);
-            adminEventsInterval = setInterval(() => {
-                if (!currentUser) return;
-                const adminEvents = JSON.parse(localStorage.getItem('nexus_admin_events') || '{}');
-                const myEvent = adminEvents[currentUser.username];
-                if (myEvent) {
-                    if (myEvent.type === 'msg') {
-                        appendMessage(myEvent.content, 'ai-msg');
-                        activeChatHistory.push({ role: "assistant", content: myEvent.content });
-                        saveCurrentChat();
-                    } else if (myEvent.type === 'jumpscare') {
-                        playJumpscare(myEvent.url);
+            let ticks = 0;
+            let busy = false;
+            adminEventsInterval = setInterval(async () => {
+                if (!currentUser || busy) return;
+                busy = true;
+                try {
+                    ticks++;
+                    if (ticks % 30 === 0) registerPresence();   // פעם בדקה
+
+                    const path = 'events/' + userKey(currentUser.username);
+                    const ev = await dbGet(path);
+                    if (ev) {
+                        await dbDelete(path);
+                        // מתעלם מאירועים ישנים מ-2 דקות ומעלה
+                        if (Date.now() - (ev.timestamp || 0) < 120000) {
+                            if (ev.type === 'msg') {
+                                appendMessage(ev.content, 'ai-msg');
+                                activeChatHistory.push({ role: "assistant", content: ev.content });
+                                saveCurrentChat();
+                            } else if (ev.type === 'jumpscare') {
+                                playJumpscare(ev.url);
+                            }
+                        }
                     }
-                    delete adminEvents[currentUser.username];
-                    localStorage.setItem('nexus_admin_events', JSON.stringify(adminEvents));
+                } catch (e) {
+                    // שגיאת רשת - מנסים שוב בסבב הבא
+                } finally {
+                    busy = false;
                 }
             }, 2000);
         }
@@ -1461,6 +1546,7 @@
             }
 
             const oldName = currentUser.username;
+            dbDelete('userlist/' + userKey(oldName)).catch(() => {});
             users[newName] = users[oldName];
             delete users[oldName];
             localStorage.setItem('copilot_users', JSON.stringify(users));
@@ -1512,6 +1598,7 @@
             if (confirm(confirmMsg)) {
                 const users = JSON.parse(localStorage.getItem('copilot_users') || '{}');
                 delete users[currentUser.username];
+                dbDelete('userlist/' + userKey(currentUser.username)).catch(() => {});
                 localStorage.setItem('copilot_users', JSON.stringify(users));
                 logout();
             }
