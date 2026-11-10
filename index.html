@@ -873,8 +873,11 @@
     </div>
 
     <script>
-        const API_KEY = "bgs_live_1ee39ea97e4f175c2c6b4ac63490220f377d43775a56ac30";
-        const API_BASE_URL = "https://birgsol-gh.davidyosef2102014.workers.dev/v1";
+        /* ================= OpenRouter ================= */
+        const API_KEY = "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";
+        const API_BASE_URL = "https://openrouter.ai/api/v1";
+        // אפשר להחליף לכל מודל מ-openrouter.ai/models, למשל "google/gemini-2.0-flash-001" או "openai/gpt-4o-mini"
+        const CHAT_MODEL = "openrouter/auto";
 
         // קישור ברירת מחדל לוידאו Jumpscare - חייב להיות קישור ישיר לקובץ (mp4/webm/mov) או YouTube
         // אפשר גם להדביק קישור אחר בלוח הניהול בלי לשנות כאן
@@ -1118,11 +1121,6 @@
         function isAdmin() {
             return !!currentUser && currentUser.email === ADMIN_EMAIL;
         }
-
-
-
-        // גיבוב סיסמה (PBKDF2) - הסיסמה עצמה אף פעם לא נשמרת
-
 
         async function fetchChats() {
             if (!currentUser) return;
@@ -1960,36 +1958,11 @@
 
             try {
                 if (isImageRequest) {
-                    let imgUrl = null;
-                    try {
-                        const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
-                        const response = await fetch(API_BASE_URL + '/images/generations', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer ' + API_KEY
-                            },
-                            body: JSON.stringify({
-                                model: "birgsol-image-2",
-                                prompt: cleanPrompt || text,
-                                size: "1024x1024",
-                                n: 1
-                            })
-                        });
-                        const data = await response.json();
-                        if (data.data && data.data[0] && data.data[0].url) {
-                            imgUrl = data.data[0].url;
-                        }
-                    } catch (e) {
-                        console.log("Server image generation failed, using fallback");
-                    }
-
-                    if (!imgUrl) {
-                        const randomSeed = Math.floor(Math.random() * 1000000);
-                        const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
-                        const encodedPrompt = encodeURIComponent(cleanPrompt || text);
-                        imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${randomSeed}&nologo=true`;
-                    }
+                    // OpenRouter לא תומך ביצירת תמונות בנקודת /images/generations, לכן משתמשים ב-Pollinations
+                    const randomSeed = Math.floor(Math.random() * 1000000);
+                    const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
+                    const encodedPrompt = encodeURIComponent(cleanPrompt || text);
+                    const imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${randomSeed}&nologo=true`;
 
                     loadingDiv.innerHTML = `
                         ${currentLang === 'he' ? 'הנה התמונה שיצרתי עבורך:' : 'Here is your generated image:'}<br>
@@ -2022,10 +1995,12 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + API_KEY
+                            'Authorization': 'Bearer ' + API_KEY,
+                            'HTTP-Referer': location.origin,
+                            'X-Title': 'NexusMind AI'
                         },
                         body: JSON.stringify({
-                            model: "birgsol-3.5-pro",
+                            model: CHAT_MODEL,
                             messages: systemMessages
                         })
                     });
