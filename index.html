@@ -587,6 +587,18 @@
 
         .auth-toggle span { color: var(--accent); cursor: pointer; text-decoration: underline; }
 
+        /* לשוניות שיטת התחברות (שם משתמש / מייל) */
+        .auth-method-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .auth-method-tab {
+            flex: 1; padding: 0.55rem; border-radius: 0.7rem; cursor: pointer;
+            background: transparent; color: var(--text-main);
+            border: 1px solid var(--card-border); transition: .2s; font-size: 0.9rem;
+        }
+        .auth-method-tab.active { background: var(--accent); color: #0f172a; font-weight: bold; }
+
+        .auth-forgot { margin-top: 0.7rem; font-size: 0.85rem; }
+        .auth-forgot span { color: var(--accent); cursor: pointer; text-decoration: underline; }
+
         /* אנימציית כניסה למערכת */
         .login-anim { animation: fadeInScale 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
@@ -715,10 +727,22 @@
                 <h2 id="auth-title">התחברות ל-NexusMind AI</h2>
                 <p id="auth-desc">הכנס פרטים כדי להמשיך לשיחות שלך</p>
 
+                <!-- בחירת שיטה: שם משתמש או מייל -->
+                <div class="auth-method-tabs">
+                    <button type="button" class="auth-method-tab active" id="auth-tab-name" onclick="setAuthMethod('name')">שם משתמש</button>
+                    <button type="button" class="auth-method-tab" id="auth-tab-email" onclick="setAuthMethod('email')">מייל</button>
+                </div>
+
+                <input type="email" id="auth-email" class="auth-input hidden" placeholder="כתובת מייל" autocomplete="email" dir="ltr">
                 <input type="text" id="auth-username" class="auth-input" placeholder="שם משתמש">
-                <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה">
+                <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה"
+                       onkeydown="if(event.key === 'Enter') handleAuth()">
 
                 <button class="auth-btn" onclick="handleAuth()" id="auth-submit-btn">התחבר</button>
+
+                <div class="auth-forgot hidden" id="auth-forgot">
+                    <span id="auth-forgot-text" onclick="forgotPassword()">שכחת סיסמה?</span>
+                </div>
 
                 <div class="auth-toggle">
                     <span id="auth-toggle-text" onclick="toggleAuthMode()">אין לך חשבון? הרשם בחינם</span>
@@ -732,6 +756,7 @@
                 <button class="close-modal-btn" onclick="closeProfileModal()">✕</button>
                 <h2 id="profile-modal-title">פרופיל משתמש</h2>
                 <p id="profile-modal-desc">נהל את פרטי החשבון שלך ב-NexusMind</p>
+                <p id="profile-email-line" class="hidden" dir="ltr" style="margin-top:-0.6rem;"></p>
 
                 <div style="text-align: right; margin-bottom: 0.3rem;" dir="auto">
                     <label style="font-size: 0.8rem; color: var(--text-muted);" id="lbl-change-name">שם משתמש חדש:</label>
@@ -888,6 +913,7 @@
         };
 
         let isSignUp = false;
+        let authMethod = 'name';   // 'name' = שם משתמש + סיסמה, 'email' = מייל + סיסמה
         let currentUser = null;
         let activeChatHistory = [];
         let currentChatId = null;
@@ -928,7 +954,14 @@
                 btnSaveName: "עדכן שם משתמש",
                 btnSavePass: "עדכן סיסמה",
                 btnSuspend: "השבת חשבון זמנית",
-                btnDelete: "מחק חשבון לצמיתות"
+                btnDelete: "מחק חשבון לצמיתות",
+                tabName: "שם משתמש",
+                tabEmail: "מייל",
+                phUsername: "שם משתמש",
+                phDisplayName: "שם תצוגה (אופציונלי)",
+                phEmail: "כתובת מייל",
+                phPassword: "סיסמה",
+                forgot: "שכחת סיסמה?"
             },
             en: {
                 greeting: "Good Afternoon",
@@ -960,7 +993,14 @@
                 btnSaveName: "Update Username",
                 btnSavePass: "Update Password",
                 btnSuspend: "Suspend Account Temporarily",
-                btnDelete: "Delete Account Permanently"
+                btnDelete: "Delete Account Permanently",
+                tabName: "Username",
+                tabEmail: "Email",
+                phUsername: "Username",
+                phDisplayName: "Display name (optional)",
+                phEmail: "Email address",
+                phPassword: "Password",
+                forgot: "Forgot password?"
             }
         };
 
@@ -1054,6 +1094,7 @@
                 chips[4].setAttribute('onclick', `quickAsk('ספר לי בדיחה')`);
             }
 
+            updateAuthUI();
             loadUserChatsList();
         }
 
@@ -1103,13 +1144,52 @@
             changeTheme(savedTheme);
         };
 
+        /* ================= מסך התחברות: שם משתמש / מייל ================= */
+        function setAuthMethod(method) {
+            authMethod = method;
+            updateAuthUI();
+        }
+
         function toggleAuthMode() {
             isSignUp = !isSignUp;
+            updateAuthUI();
+        }
+
+        function updateAuthUI() {
             const t = translations[currentLang];
-            document.getElementById('auth-title').textContent = isSignUp ? t.signUpTitle : t.loginTitle;
-            document.getElementById('auth-desc').textContent = isSignUp ? t.signUpDesc : t.loginDesc;
-            document.getElementById('auth-submit-btn').textContent = isSignUp ? t.signUpBtn : t.loginBtn;
-            document.getElementById('auth-toggle-text').textContent = isSignUp ? t.hasAccount : t.noAccount;
+            const byEmail = authMethod === 'email';
+
+            const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+            set('auth-title', isSignUp ? t.signUpTitle : t.loginTitle);
+            set('auth-desc', isSignUp ? t.signUpDesc : t.loginDesc);
+            set('auth-submit-btn', isSignUp ? t.signUpBtn : t.loginBtn);
+            set('auth-toggle-text', isSignUp ? t.hasAccount : t.noAccount);
+            set('auth-tab-name', t.tabName);
+            set('auth-tab-email', t.tabEmail);
+            set('auth-forgot-text', t.forgot);
+
+            const tabName = document.getElementById('auth-tab-name');
+            const tabEmail = document.getElementById('auth-tab-email');
+            if (tabName) tabName.classList.toggle('active', !byEmail);
+            if (tabEmail) tabEmail.classList.toggle('active', byEmail);
+
+            const emailInput = document.getElementById('auth-email');
+            const userInput = document.getElementById('auth-username');
+            const passInput = document.getElementById('auth-password');
+
+            if (emailInput) {
+                emailInput.classList.toggle('hidden', !byEmail);
+                emailInput.placeholder = t.phEmail;
+            }
+            if (userInput) {
+                // במצב מייל: שדה השם מופיע רק בהרשמה (כשם תצוגה)
+                userInput.classList.toggle('hidden', byEmail && !isSignUp);
+                userInput.placeholder = byEmail ? t.phDisplayName : t.phUsername;
+            }
+            if (passInput) passInput.placeholder = t.phPassword;
+
+            const forgot = document.getElementById('auth-forgot');
+            if (forgot) forgot.classList.toggle('hidden', !(byEmail && !isSignUp));
         }
 
         /* ================= חשבונות (שמורים ב-Firebase) ================= */
@@ -1119,7 +1199,18 @@
             return !!currentUser && currentUser.email === ADMIN_EMAIL;
         }
 
+        // חשבון שנרשם עם מייל אמיתי (לעומת חשבון שם-משתמש שמקבל מייל פנימי @nexusmind.app)
+        function isInternalEmail(email) {
+            return String(email || '').toLowerCase().endsWith('@nexusmind.app');
+        }
 
+        function isEmailAccount() {
+            return !!currentUser && !!currentUser.email && !isInternalEmail(currentUser.email);
+        }
+
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
 
         // גיבוב סיסמה (PBKDF2) - הסיסמה עצמה אף פעם לא נשמרת
 
@@ -1157,6 +1248,10 @@
         }
 
         async function handleAuth() {
+            if (authMethod === 'email') {
+                return handleEmailAuth();
+            }
+
             const username = document.getElementById('auth-username').value.trim();
             const password = document.getElementById('auth-password').value.trim();
             const he = currentLang === 'he';
@@ -1237,6 +1332,121 @@
             } finally {
                 btn.disabled = false;
             }
+        }
+
+        /* ---------- הרשמה / התחברות עם מייל ---------- */
+        async function handleEmailAuth() {
+            const he = currentLang === 'he';
+            const email = document.getElementById('auth-email').value.trim().toLowerCase();
+            const password = document.getElementById('auth-password').value.trim();
+            let name = document.getElementById('auth-username').value.trim();
+
+            if (!email || !password) {
+                alert(he ? "אנא מלא מייל וסיסמה" : "Please enter your email and password");
+                return;
+            }
+            if (!isValidEmail(email) || isInternalEmail(email)) {
+                alert(he ? "כתובת המייל לא תקינה" : "Invalid email address");
+                return;
+            }
+            if (FIREBASE_API_KEY.indexOf('PASTE') === 0) {
+                alert("חסר Web API Key של Firebase בקוד (FIREBASE_API_KEY)");
+                return;
+            }
+
+            const btn = document.getElementById('auth-submit-btn');
+            btn.disabled = true;
+            authState = null;
+
+            try {
+                if (isSignUp) {
+                    if (!name) name = email.split('@')[0];
+
+                    let data;
+                    try {
+                        // Firebase לא מאפשר שני חשבונות על אותו מייל
+                        data = await authCall('signUp', { email: email, password: password, returnSecureToken: true });
+                    } catch (e) {
+                        const msg = String(e.message);
+                        if (msg.includes('EMAIL_EXISTS')) {
+                            alert(he ? "כבר קיים חשבון עם המייל הזה. נסה להתחבר." : "An account with this email already exists. Try logging in.");
+                            return;
+                        }
+                        if (msg.includes('WEAK_PASSWORD')) {
+                            alert(he ? "הסיסמה חייבת להכיל לפחות 6 תווים" : "Password must be at least 6 characters");
+                            return;
+                        }
+                        if (msg.includes('INVALID_EMAIL')) {
+                            alert(he ? "כתובת המייל לא תקינה" : "Invalid email address");
+                            return;
+                        }
+                        throw e;
+                    }
+                    setAuth(data);
+
+                    try {
+                        await dbPut('accounts/' + authState.uid, { name: name, status: 'active', createdAt: Date.now() });
+                    } catch (e) {
+                        try { await authCall('delete', { idToken: authState.idToken }); } catch (e2) {}
+                        authState = null;
+                        throw e;
+                    }
+                    startSession(name);
+                } else {
+                    let data;
+                    try {
+                        data = await authCall('signInWithPassword', { email: email, password: password, returnSecureToken: true });
+                    } catch (e) {
+                        if (String(e.message).includes('TOO_MANY_ATTEMPTS')) {
+                            alert(he ? "יותר מדי ניסיונות, נסה שוב מאוחר יותר" : "Too many attempts, try again later");
+                        } else {
+                            alert(he ? "מייל או סיסמה שגויים" : "Invalid email or password");
+                        }
+                        return;
+                    }
+                    setAuth(data);
+
+                    let acc = await dbGet('accounts/' + authState.uid);
+                    if (!acc || !acc.name) {
+                        // חשבון שנוצר אבל הפרופיל שלו לא נשמר - משלימים
+                        acc = { name: email.split('@')[0], status: 'active', createdAt: Date.now() };
+                        await dbPut('accounts/' + authState.uid, acc);
+                    }
+                    if (acc.status === 'suspended') {
+                        await dbPatch('accounts/' + authState.uid, { status: 'active' });
+                        alert(he ? "החשבון שלך הופעל מחדש בהצלחה!" : "Your account has been reactivated successfully!");
+                    }
+                    startSession(acc.name);
+                }
+            } catch (e) {
+                authState = null;
+                alert((he ? "שגיאת חיבור לשרת: " : "Server connection error: ") + e.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // שחזור סיסמה - Firebase שולח מייל עם קישור לאיפוס
+        async function forgotPassword() {
+            const he = currentLang === 'he';
+            const email = document.getElementById('auth-email').value.trim().toLowerCase();
+            if (!isValidEmail(email) || isInternalEmail(email)) {
+                alert(he ? "הכנס קודם את כתובת המייל שלך בשדה המייל" : "Enter your email address in the email field first");
+                return;
+            }
+            try {
+                await authCall('sendOobCode', { requestType: 'PASSWORD_RESET', email: email });
+            } catch (e) {
+                const msg = String(e.message);
+                if (!msg.includes('EMAIL_NOT_FOUND')) {
+                    alert((he ? "שגיאה: " : "Error: ") + msg);
+                    return;
+                }
+            }
+            // אותה הודעה גם אם המייל לא קיים - כדי לא לחשוף אילו מיילים רשומים
+            alert(he
+                ? "אם קיים חשבון עם המייל הזה, נשלח אליו קישור לאיפוס סיסמה. בדוק גם בספאם."
+                : "If an account exists for this email, a password reset link has been sent. Check your spam folder too.");
         }
 
         function setupUserSession() {
@@ -1714,6 +1924,17 @@
             if (profileModal) {
                 document.getElementById('profile-new-username').value = currentUser.username;
                 document.getElementById('profile-new-password').value = '';
+
+                // בחשבון מייל מציגים את המייל שהחשבון שמור עליו
+                const emailLine = document.getElementById('profile-email-line');
+                if (emailLine) {
+                    if (isEmailAccount()) {
+                        emailLine.textContent = '✉️ ' + currentUser.email;
+                        emailLine.classList.remove('hidden');
+                    } else {
+                        emailLine.classList.add('hidden');
+                    }
+                }
                 profileModal.classList.remove('hidden');
             }
         }
@@ -1741,6 +1962,18 @@
 
             try {
                 const uid = currentUser.uid;
+
+                // חשבון מייל: השם הוא רק שם תצוגה, החשבון נשאר שמור על המייל
+                if (isEmailAccount()) {
+                    await dbPatch('accounts/' + uid, { name: newName });
+                    await dbPut('userlist/' + uid, { name: newName, lastSeen: Date.now() });
+                    currentUser.username = newName;
+                    setupUserSession();
+                    closeProfileModal();
+                    alert(he ? "השם עודכן בהצלחה!" : "Name updated successfully!");
+                    return;
+                }
+
                 const oldKey = userKey(currentUser.username);
                 const newKey = userKey(newName);
                 const oldRec = await dbGet('names/' + oldKey);
@@ -1833,7 +2066,10 @@
             if (confirm(confirmMsg)) {
                 try {
                     const uid = currentUser.uid;
-                    await dbDelete('names/' + userKey(currentUser.username));
+                    // רק חשבונות שם-משתמש רשומים ברשימת השמות התפוסים
+                    if (!isEmailAccount()) {
+                        await dbDelete('names/' + userKey(currentUser.username));
+                    }
                     await Promise.all([
                         dbDelete('accounts/' + uid),
                         dbDelete('chats/' + uid),
