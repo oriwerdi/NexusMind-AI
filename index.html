@@ -877,7 +877,11 @@
         const API_KEY = "";
         const API_BASE_URL = "https://nexusmind-ai2.oriwerdiger.workers.dev/v1";
         // אפשר להחליף לכל מודל מ-openrouter.ai/models, למשל "google/gemini-2.0-flash-001" או "openai/gpt-4o-mini"
-const CHAT_MODEL = "google/gemma-4-31b-it:free";
+const CHAT_MODELS = [
+    "google/gemma-4-31b-it:free",
+    "nvidia/nemotron-3-ultra:free",
+    "openrouter/auto"
+];
 
         // קישור ברירת מחדל לוידאו Jumpscare - חייב להיות קישור ישיר לקובץ (mp4/webm/mov) או YouTube
         // אפשר גם להדביק קישור אחר בלוח הניהול בלי לשנות כאן
