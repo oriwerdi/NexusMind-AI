@@ -1986,11 +1986,12 @@ const CHAT_MODEL = "google/gemma-4-31b-it:free";
                         ? `אתה NexusMind AI - עוזר חכם ומקצועי. שם המשתמש מולך הוא ${userNameStr}. ענה בשפה שבה הפנו אליך שאלה (עברית או אנגלית). אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד ברנדומליות בסגנון: "${randomCreatorResp}". לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר.`
                         : `You are NexusMind AI - a smart and empathetic AI assistant. The current user name is ${userNameStr}. Respond in the language used by the user. If asked who created, built, or owns you, ALWAYS answer dynamically like: "${randomCreatorResp}". Do not name third parties or call yourself anything else.`;
 
-                    const systemMessages = [
-                        { role: "system", content: systemPromptText },
-                        ...activeChatHistory
-                    ];
-
+ const firstUserIdx = activeChatHistory.findIndex(m => m.role === 'user');
+const systemMessages = activeChatHistory.map((m, i) =>
+    i === firstUserIdx
+        ? { role: 'user', content: systemPromptText + "\n\n" + m.content }
+        : m
+);
                     const response = await fetch(API_BASE_URL + '/chat/completions', {
                         method: 'POST',
                         headers: {
