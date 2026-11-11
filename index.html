@@ -2005,7 +2005,7 @@ const systemMessages = activeChatHistory.map((m, i) =>
                             'X-Title': 'NexusMind AI'
                         },
                         body: JSON.stringify({
-                            model: CHAT_MODEL,
+                            models: CHAT_MODELS,
                             messages: systemMessages
                         })
                     });
@@ -2028,7 +2028,7 @@ const systemMessages = activeChatHistory.map((m, i) =>
                     }
                 }
             } catch (err) {
-            loadingDiv.textContent = (currentLang === 'he' ? "שגיאה מהשרת: " : "Server Error: ") + JSON.stringify(data.error);
+loadingDiv.textContent = (currentLang === 'he' ? "שגיאה מהשרת: " : "Server Error: ") + JSON.stringify(data.error);
             }
         }
 
