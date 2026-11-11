@@ -2024,7 +2024,7 @@ const systemMessages = activeChatHistory.map((m, i) =>
                     }
                 }
             } catch (err) {
-                loadingDiv.textContent = (currentLang === 'he' ? "שגיאת תקשורת: " : "Connection error: ") + err.message;
+            loadingDiv.textContent = (currentLang === 'he' ? "שגיאה מהשרת: " : "Server Error: ") + JSON.stringify(data.error);
             }
         }
 
