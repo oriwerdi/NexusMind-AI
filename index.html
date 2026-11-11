@@ -874,14 +874,15 @@
 
     <script>
         /* ================= OpenRouter ================= */
+        // המפתח שמור ב-Cloudflare Worker, לא כאן
         const API_KEY = "";
         const API_BASE_URL = "https://nexusmind-ai2.oriwerdiger.workers.dev/v1";
-        // אפשר להחליף לכל מודל מ-openrouter.ai/models, למשל "google/gemini-2.0-flash-001" או "openai/gpt-4o-mini"
-const CHAT_MODELS = [
-    "google/gemma-4-31b-it:free",
-    "nvidia/nemotron-3-ultra-550b-a55b:free",
-    "openrouter/auto"
-];
+        // רשימת מודלים: אם הראשון נכשל, OpenRouter עובר לבא אחריו
+        const CHAT_MODELS = [
+            "google/gemma-4-31b-it:free",
+            "nvidia/nemotron-3-ultra-550b-a55b:free",
+            "openrouter/auto"
+        ];
 
         // קישור ברירת מחדל לוידאו Jumpscare - חייב להיות קישור ישיר לקובץ (mp4/webm/mov) או YouTube
         // אפשר גם להדביק קישור אחר בלוח הניהול בלי לשנות כאן
@@ -1990,12 +1991,18 @@ const CHAT_MODELS = [
                         ? `אתה NexusMind AI - עוזר חכם ומקצועי. שם המשתמש מולך הוא ${userNameStr}. ענה בשפה שבה הפנו אליך שאלה (עברית או אנגלית). אם שואלים אותך מי יצר אותך, מי בנה אותך או מי אחראי עליך, תענה תמיד ברנדומליות בסגנון: "${randomCreatorResp}". לעולם אל תגיד שאתה שייך לספק צד שלישי או תקרא לעצמך בשם אחר.`
                         : `You are NexusMind AI - a smart and empathetic AI assistant. The current user name is ${userNameStr}. Respond in the language used by the user. If asked who created, built, or owns you, ALWAYS answer dynamically like: "${randomCreatorResp}". Do not name third parties or call yourself anything else.`;
 
- const firstUserIdx = activeChatHistory.findIndex(m => m.role === 'user');
-const systemMessages = activeChatHistory.map((m, i) =>
-    i === firstUserIdx
-        ? { role: 'user', content: systemPromptText + "\n\n" + m.content }
-        : m
-);
+                    // Gemma לא תומך ב-system, לכן ההוראות משולבות בהודעה הראשונה של המשתמש
+                    const firstUserIdx = activeChatHistory.findIndex(m => m.role === 'user');
+                    const systemMessages = activeChatHistory.map((m, i) =>
+                        i === firstUserIdx
+                            ? { role: 'user', content: systemPromptText + "\n\n" + m.content }
+                            : m
+                    );
+
+                    // אם אין תשובה אחרי 2 דקות - עוצרים ומציגים שגיאה במקום לתקוע את המסך
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 120000);
+
                     const response = await fetch(API_BASE_URL + '/chat/completions', {
                         method: 'POST',
                         headers: {
@@ -2007,8 +2014,10 @@ const systemMessages = activeChatHistory.map((m, i) =>
                         body: JSON.stringify({
                             models: CHAT_MODELS,
                             messages: systemMessages
-                        })
+                        }),
+                        signal: controller.signal
                     });
+                    clearTimeout(timeoutId);
 
                     const rawText = await response.text();
                     let data;
@@ -2016,11 +2025,21 @@ const systemMessages = activeChatHistory.map((m, i) =>
                     catch (e) { data = { error: { message: 'HTTP ' + response.status + ': ' + rawText.slice(0, 200) } }; }
                     if (!response.ok && !data.error) data.error = { message: 'HTTP ' + response.status };
 
+                    console.log("OpenRouter response:", data);
+
                     if (data.choices && data.choices[0] && data.choices[0].message) {
-                        const aiReply = data.choices[0].message.content;
-                        loadingDiv.textContent = aiReply;
-                        activeChatHistory.push({ role: "assistant", content: aiReply });
-                        saveCurrentChat();
+                        const aiReply = (data.choices[0].message.content || "").trim();
+                        if (!aiReply) {
+                            // המודל החזיר תשובה ריקה (קורה במודלי חשיבה) - לא שומרים אותה בהיסטוריה
+                            activeChatHistory.pop();
+                            loadingDiv.textContent = currentLang === 'he'
+                                ? "המודל החזיר תשובה ריקה. נסה לשלוח שוב."
+                                : "The model returned an empty reply. Please try again.";
+                        } else {
+                            loadingDiv.textContent = aiReply;
+                            activeChatHistory.push({ role: "assistant", content: aiReply });
+                            saveCurrentChat();
+                        }
                     } else if (data.error) {
                         loadingDiv.textContent = (currentLang === 'he' ? "שגיאה מהשרת: " : "Server Error: ") + (data.error.message || JSON.stringify(data.error));
                     } else {
@@ -2028,7 +2047,10 @@ const systemMessages = activeChatHistory.map((m, i) =>
                     }
                 }
             } catch (err) {
-loadingDiv.textContent = (currentLang === 'he' ? "שגיאה מהשרת: " : "Server Error: ") + JSON.stringify(data.error);
+                const timedOut = err && err.name === 'AbortError';
+                loadingDiv.textContent = timedOut
+                    ? (currentLang === 'he' ? "לא התקבלה תשובה בזמן. נסה שוב." : "No response in time. Please try again.")
+                    : (currentLang === 'he' ? "שגיאת תקשורת: " : "Connection error: ") + err.message;
             }
         }
 
