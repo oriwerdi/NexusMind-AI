@@ -1999,51 +1999,62 @@
                             : m
                     );
 
-                    // אם אין תשובה אחרי 2 דקות - עוצרים ומציגים שגיאה במקום לתקוע את המסך
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 120000);
+                    // מנסים כל מודל בנפרד לפי הסדר. אם מודל נכשל או מחזיר תשובה ריקה - עוברים לבא
+                    const he = currentLang === 'he';
+                    let aiReply = "";
+                    let usedModel = "";
+                    let lastProblem = "";
 
-                    const response = await fetch(API_BASE_URL + '/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + API_KEY,
-                            'HTTP-Referer': location.origin,
-                            'X-Title': 'NexusMind AI'
-                        },
-                        body: JSON.stringify({
-                            models: CHAT_MODELS,
-                            messages: systemMessages
-                        }),
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeoutId);
+                    for (const model of CHAT_MODELS) {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 60000);
+                        try {
+                            const response = await fetch(API_BASE_URL + '/chat/completions', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + API_KEY,
+                                    'HTTP-Referer': location.origin,
+                                    'X-Title': 'NexusMind AI'
+                                },
+                                body: JSON.stringify({ model: model, messages: systemMessages }),
+                                signal: controller.signal
+                            });
+                            clearTimeout(timeoutId);
 
-                    const rawText = await response.text();
-                    let data;
-                    try { data = JSON.parse(rawText); }
-                    catch (e) { data = { error: { message: 'HTTP ' + response.status + ': ' + rawText.slice(0, 200) } }; }
-                    if (!response.ok && !data.error) data.error = { message: 'HTTP ' + response.status };
+                            const rawText = await response.text();
+                            let data;
+                            try { data = JSON.parse(rawText); }
+                            catch (e) { data = { error: { message: 'HTTP ' + response.status + ': ' + rawText.slice(0, 200) } }; }
+                            if (!response.ok && !data.error) data.error = { message: 'HTTP ' + response.status };
 
-                    console.log("OpenRouter response:", data);
+                            console.log("Model:", model, "Response:", data);
 
-                    if (data.choices && data.choices[0] && data.choices[0].message) {
-                        const aiReply = (data.choices[0].message.content || "").trim();
-                        if (!aiReply) {
-                            // המודל החזיר תשובה ריקה (קורה במודלי חשיבה) - לא שומרים אותה בהיסטוריה
-                            activeChatHistory.pop();
-                            loadingDiv.textContent = currentLang === 'he'
-                                ? "המודל החזיר תשובה ריקה. נסה לשלוח שוב."
-                                : "The model returned an empty reply. Please try again.";
-                        } else {
-                            loadingDiv.textContent = aiReply;
-                            activeChatHistory.push({ role: "assistant", content: aiReply });
-                            saveCurrentChat();
+                            const msg = data.choices && data.choices[0] && data.choices[0].message;
+                            const content = ((msg && msg.content) || "").trim();
+                            if (content) {
+                                aiReply = content;
+                                usedModel = model;
+                                break;
+                            }
+                            lastProblem = model + ": " + (data.error
+                                ? (data.error.message || JSON.stringify(data.error))
+                                : (he ? "תשובה ריקה" : "empty reply"));
+                        } catch (e) {
+                            clearTimeout(timeoutId);
+                            lastProblem = model + ": " + (e && e.name === 'AbortError'
+                                ? (he ? "לא ענה בזמן" : "timed out")
+                                : e.message);
                         }
-                    } else if (data.error) {
-                        loadingDiv.textContent = (currentLang === 'he' ? "שגיאה מהשרת: " : "Server Error: ") + (data.error.message || JSON.stringify(data.error));
+                    }
+
+                    if (aiReply) {
+                        loadingDiv.textContent = aiReply;
+                        activeChatHistory.push({ role: "assistant", content: aiReply });
+                        saveCurrentChat();
                     } else {
-                        loadingDiv.textContent = currentLang === 'he' ? "שגיאה בקבלת התשובה מהשרת" : "Error receiving response from server";
+                        activeChatHistory.pop();   // לא שומרים הודעה שלא נענתה
+                        loadingDiv.textContent = (he ? "כל המודלים נכשלו. הבעיה האחרונה: " : "All models failed. Last problem: ") + lastProblem;
                     }
                 }
             } catch (err) {
