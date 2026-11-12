@@ -680,6 +680,55 @@
 
         .download-btn:hover { background: var(--accent-hover); color: white; }
 
+        .profile-card { max-height: 90vh; overflow-y: auto; }
+        textarea.profile-input { font-family: inherit; resize: vertical; }
+        select.profile-input option { background: #0f172a; color: white; }
+
+        .msg-text { white-space: pre-wrap; }
+        .msg-actions { display: flex; gap: 0.4rem; margin-top: 0.6rem; flex-wrap: wrap; }
+        .mini-btn {
+            background: rgba(255,255,255,0.08); border: 1px solid var(--card-border);
+            color: var(--text-main); padding: 0.25rem 0.7rem; border-radius: 0.5rem;
+            font-size: 0.78rem; cursor: pointer; transition: 0.2s;
+        }
+        .mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .thinking { display: inline-flex; gap: 4px; vertical-align: middle; margin-inline-end: 0.5rem; }
+        .thinking .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: dotBounce 1.2s infinite ease-in-out; }
+        .thinking .dot:nth-child(2) { animation-delay: 0.15s; }
+        .thinking .dot:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes dotBounce {
+            0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+            40% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        .mic-btn {
+            background: transparent; border: 1px solid var(--card-border); color: var(--text-main);
+            width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 1.05rem;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .mic-btn:hover { border-color: var(--accent); }
+        .mic-btn.mic-active { background: #ef4444; border-color: #ef4444; animation: micPulse 1.2s infinite; }
+        @keyframes micPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+        }
+
+        .broadcast-banner {
+            position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: center;
+        }
+        .broadcast-card {
+            background: var(--card-bg); border: 1px solid var(--accent); border-radius: 1.5rem;
+            padding: 2rem; width: 90%; max-width: 460px; text-align: center;
+            box-shadow: 0 0 40px rgba(56,189,248,0.35);
+        }
+        .broadcast-card h3 { color: var(--accent); margin-bottom: 0.8rem; font-size: 1.3rem; }
+        .broadcast-text { white-space: pre-wrap; word-break: break-word; margin-bottom: 1.2rem; line-height: 1.6; }
+
+        .admin-row-btns { display: flex; gap: 0.3rem; align-items: center; }
+        .blocked-badge { color: #ef4444; font-size: 0.75rem; margin-inline-start: 0.4rem; }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -749,6 +798,23 @@
 
                 <hr style="border-color: var(--card-border); margin: 0.75rem 0;">
 
+                <div style="text-align: right; margin-bottom: 0.3rem;" dir="auto">
+                    <label style="font-size: 0.8rem; color: var(--text-muted);" id="lbl-personality">אישיות ה-AI:</label>
+                </div>
+                <select id="profile-personality" class="profile-input" onchange="onPersonalityChange()">
+                    <option value="default">רגיל</option>
+                    <option value="friendly">חמים וידידותי</option>
+                    <option value="funny">מצחיק</option>
+                    <option value="professional">רציני ומקצועי</option>
+                    <option value="teacher">מורה סבלני</option>
+                    <option value="short">קצר וענייני</option>
+                    <option value="custom">מותאם אישית</option>
+                </select>
+                <textarea id="profile-personality-custom" class="profile-input hidden" rows="3" maxlength="500" placeholder="תאר איך ה-AI צריך להתנהג..."></textarea>
+                <button class="action-btn" onclick="savePersonality()" id="btn-save-personality">שמור אישיות</button>
+
+                <hr style="border-color: var(--card-border); margin: 0.75rem 0;">
+
                 <button class="action-btn btn-warning" onclick="suspendAccount()" id="btn-suspend-account">השבת חשבון זמנית</button>
                 <button class="action-btn btn-danger" onclick="deleteAccountPermanently()" id="btn-delete-account">מחק חשבון לצמיתות</button>
             </div>
@@ -780,6 +846,13 @@
                             <button class="action-btn" onclick="previewJumpscare()">בדוק אצלי</button>
                             <button class="action-btn btn-danger" onclick="triggerJumpscareForSelected()">הפעל אצל המשתמש</button>
                         </div>
+
+                        <label style="font-size:0.85rem;">📢 הודעה לכל המשתמשים:</label>
+                        <input type="text" id="admin-broadcast-input" class="profile-input" placeholder="ההודעה תופיע לכל מי שמחובר, בכל מחשב...">
+                        <div style="display:flex; gap:0.5rem;">
+                            <button class="action-btn" onclick="sendBroadcast()">שלח לכולם</button>
+                            <button class="action-btn btn-warning" onclick="clearBroadcast()">בטל הודעה</button>
+                        </div>
                     </div>
                 </div>
 
@@ -794,6 +867,15 @@
 
         <!-- אלמנט וידאו קופץ בלעדי (Jumpscare Overlay) - לחיצה סוגרת -->
         <div id="jumpscare-container" class="jumpscare-overlay hidden"></div>
+
+        <!-- הודעת מנהל לכל המשתמשים -->
+        <div id="broadcast-banner" class="broadcast-banner hidden">
+            <div class="broadcast-card">
+                <h3 id="broadcast-title">📢 הודעה מהמנהל</h3>
+                <div id="broadcast-text" class="broadcast-text"></div>
+                <button class="action-btn" onclick="dismissBroadcast()" id="broadcast-ok">אישור</button>
+            </div>
+        </div>
 
         <!-- סרגל עליון -->
         <header>
@@ -836,7 +918,7 @@
             <div class="search-box-container">
                 <input type="text" id="home-input" class="search-box-input" placeholder="שאל שאלה או בקש ליצור תמונה..." onkeydown="if(event.key === 'Enter') startChatFromHome()">
                 <div class="search-box-tools">
-                    <div></div>
+                    <button class="mic-btn" id="mic-home" onclick="toggleMic('home-input','mic-home')" title="הקלטה">🎤</button>
                     <div class="search-actions">
                         <button class="send-btn" onclick="startChatFromHome()">
                             <svg class="svg-icon send-btn-icon" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -863,7 +945,11 @@
             <div class="search-box-container" style="margin-bottom: 0;">
                 <input type="text" id="chat-input" class="search-box-input" placeholder="הקלד הודעה או בקשה לתמונה..." onkeydown="if(event.key === 'Enter') sendChatMessage()">
                 <div class="search-box-tools">
-                    <span style="font-size:0.8rem; color:var(--text-muted);" id="lbl-ai-status">NexusMind AI v3.0</span>
+                    <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <button class="mic-btn" id="mic-chat" onclick="toggleMic('chat-input','mic-chat')" title="הקלטה">🎤</button>
+                        <button class="mini-btn" id="btn-export-chat" onclick="exportChat()">⬇ ייצוא שיחה</button>
+                        <span style="font-size:0.8rem; color:var(--text-muted);" id="lbl-ai-status">NexusMind AI v3.0</span>
+                    </div>
                     <button class="send-btn" onclick="sendChatMessage()">
                         <svg class="svg-icon send-btn-icon" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
@@ -1058,6 +1144,7 @@
                 chips[4].setAttribute('onclick', `quickAsk('ספר לי בדיחה')`);
             }
 
+            updateNewLabels();
             loadUserChatsList();
         }
 
@@ -1144,7 +1231,7 @@
                     authState = { refreshToken: saved.refreshToken, expiresAt: 0 };
                     await refreshAuth();
                     const acc = await dbGet('accounts/' + authState.uid);
-                    if (acc && acc.name && acc.status !== 'suspended') {
+                    if (acc && acc.name && acc.status !== 'suspended' && !(await isBlocked(authState.uid))) {
                         currentUser = { username: acc.name, uid: authState.uid, email: authState.email };
                         setupUserSession();
                         return;
@@ -1223,6 +1310,12 @@
                     }
                     setAuth(data);
 
+                    if (await isBlocked(authState.uid)) {
+                        authState = null;
+                        alert(he ? "החשבון שלך נחסם על ידי המנהל" : "Your account has been blocked by the admin");
+                        return;
+                    }
+
                     const acc = await dbGet('accounts/' + authState.uid);
                     if (acc && acc.status === 'suspended') {
                         await dbPatch('accounts/' + authState.uid, { status: 'active' });
@@ -1268,6 +1361,7 @@
 
             checkAdminEvents();
             updateUI();
+            loadPersonality();
             fetchChats().then(loadUserChatsList).catch(() => {});
         }
 
@@ -1417,18 +1511,24 @@
             }).catch(() => {});
         }
 
+        async function isBlocked(uid) {
+            try { return !!(await dbGet('blocked/' + uid)); } catch (e) { return false; }
+        }
+
         async function renderAdminUserList() {
             const container = document.getElementById('admin-active-chats');
             if (!container) return;
             container.textContent = 'טוען...';
 
-            let list = {};
+            let list = {}, aliases = {}, blocked = {};
             try {
                 list = (await dbGet('userlist')) || {};
             } catch (e) {
                 container.textContent = 'שגיאת חיבור ל-Firebase: ' + e.message;
                 return;
             }
+            try { aliases = (await dbGet('adminAliases')) || {}; } catch (e) {}
+            try { blocked = (await dbGet('blocked')) || {}; } catch (e) {}
 
             container.innerHTML = '';
             const entries = Object.entries(list)
@@ -1441,28 +1541,130 @@
             }
 
             entries.forEach(([uid, u]) => {
+                const alias = typeof aliases[uid] === 'string' ? aliases[uid] : '';
+                const display = alias || u.name;
+                const isBlockedUser = !!blocked[uid];
+
                 const row = document.createElement('div');
                 row.className = 'admin-user-row';
 
                 const label = document.createElement('span');
                 const strong = document.createElement('strong');
-                strong.textContent = u.name;
+                strong.textContent = display;
+                label.appendChild(strong);
+                if (alias) {
+                    const orig = document.createElement('small');
+                    orig.style.cssText = 'color:var(--text-muted); margin-inline-start:0.4rem;';
+                    orig.textContent = '(' + u.name + ')';
+                    label.appendChild(orig);
+                }
                 const seen = document.createElement('small');
                 seen.style.cssText = 'color:var(--text-muted); margin-inline-start:0.5rem;';
                 seen.textContent = u.lastSeen ? new Date(u.lastSeen).toLocaleString() : '';
-                label.append(strong, seen);
+                label.appendChild(seen);
+                if (isBlockedUser) {
+                    const badge = document.createElement('span');
+                    badge.className = 'blocked-badge';
+                    badge.textContent = '🚫 חסום';
+                    label.appendChild(badge);
+                }
 
                 const chosen = selectedAdminUid === uid;
-                const btn = document.createElement('button');
-                btn.className = 'logout-btn';
-                btn.style.background = chosen ? 'var(--accent)' : 'transparent';
-                btn.style.color = chosen ? '#0f172a' : 'var(--text-main)';
-                btn.textContent = chosen ? 'נבחר' : 'בחר';
-                btn.onclick = () => selectAdminTarget(uid, u.name);
+                const btns = document.createElement('div');
+                btns.className = 'admin-row-btns';
 
-                row.append(label, btn);
+                const pick = document.createElement('button');
+                pick.className = 'logout-btn';
+                pick.style.background = chosen ? 'var(--accent)' : 'transparent';
+                pick.style.color = chosen ? '#0f172a' : 'var(--text-main)';
+                pick.textContent = chosen ? 'נבחר' : 'בחר';
+                pick.onclick = () => selectAdminTarget(uid, display);
+
+                const rename = document.createElement('button');
+                rename.className = 'logout-btn';
+                rename.title = 'שנה שם תצוגה';
+                rename.textContent = '✏️';
+                rename.onclick = () => renameUserAlias(uid, display, u.name);
+
+                const block = document.createElement('button');
+                block.className = 'logout-btn';
+                block.title = isBlockedUser ? 'בטל חסימה' : 'חסום משתמש';
+                block.textContent = isBlockedUser ? '✅' : '🚫';
+                block.onclick = () => toggleBlockUser(uid, u.name, isBlockedUser);
+
+                btns.append(pick, rename, block);
+                row.append(label, btns);
                 container.appendChild(row);
             });
+        }
+
+        async function renameUserAlias(uid, currentDisplay, originalName) {
+            const n = prompt('שם תצוגה חדש (רק אתה רואה אותו). השאר ריק כדי להחזיר לשם המקורי:', currentDisplay);
+            if (n === null) return;
+            const clean = n.trim().slice(0, 40);
+            try {
+                if (clean && clean !== originalName) await dbPut('adminAliases/' + uid, clean);
+                else await dbDelete('adminAliases/' + uid);
+                if (selectedAdminUid === uid) selectedAdminUser = clean || originalName;
+            } catch (e) {
+                alert('שגיאה בשמירה: ' + e.message + '\n(ייתכן שחסרה הרשאה ל-adminAliases בחוקי Firebase)');
+            }
+            renderAdminUserList();
+        }
+
+        async function toggleBlockUser(uid, name, currentlyBlocked) {
+            const msg = currentlyBlocked ? `לבטל את החסימה של ${name}?` : `לחסום את ${name}? הוא ינותק ולא יוכל להתחבר.`;
+            if (!confirm(msg)) return;
+            try {
+                if (currentlyBlocked) await dbDelete('blocked/' + uid);
+                else await dbPut('blocked/' + uid, { name: name, at: Date.now() });
+            } catch (e) {
+                alert('שגיאה: ' + e.message + '\n(ייתכן שחסרה הרשאה ל-blocked בחוקי Firebase)');
+            }
+            renderAdminUserList();
+        }
+
+        /* ---------- הודעה לכל המשתמשים ---------- */
+        let currentBroadcastId = null;
+
+        async function sendBroadcast() {
+            const input = document.getElementById('admin-broadcast-input');
+            const text = input.value.trim();
+            if (!text) { alert("כתוב הודעה לשליחה"); return; }
+            const id = Date.now();
+            try {
+                await dbPut('broadcast', { id: id, content: text.slice(0, 500), timestamp: id });
+                input.value = '';
+                alert("ההודעה נשלחה לכל המשתמשים");
+            } catch (e) {
+                alert('שגיאה בשליחה: ' + e.message + '\n(ייתכן שחסרה הרשאה ל-broadcast בחוקי Firebase)');
+            }
+        }
+
+        async function clearBroadcast() {
+            try { await dbDelete('broadcast'); alert("ההודעה בוטלה"); }
+            catch (e) { alert('שגיאה: ' + e.message); }
+        }
+
+        async function checkBroadcast() {
+            if (!currentUser) return;
+            try {
+                const b = await dbGet('broadcast');
+                if (!b || !b.id || !b.content) return;
+                if (Date.now() - (b.timestamp || b.id) > 86400000) return;   // ישן מיממה
+                if (String(localStorage.getItem('nexus_last_broadcast')) === String(b.id)) return;
+                if (currentBroadcastId === b.id) return;
+                currentBroadcastId = b.id;
+                document.getElementById('broadcast-text').textContent = b.content;
+                document.getElementById('broadcast-banner').classList.remove('hidden');
+            } catch (e) {}
+        }
+
+        function dismissBroadcast() {
+            if (currentBroadcastId) {
+                try { localStorage.setItem('nexus_last_broadcast', String(currentBroadcastId)); } catch (e) {}
+            }
+            document.getElementById('broadcast-banner').classList.add('hidden');
         }
 
         function selectAdminTarget(uid, name) {
@@ -1668,6 +1870,7 @@
         function checkAdminEvents() {
             if (!currentUser) return;
             registerPresence();
+            checkBroadcast();
             if (adminEventsInterval) clearInterval(adminEventsInterval);
             let ticks = 0;
             let busy = false;
@@ -1677,19 +1880,34 @@
                 try {
                     ticks++;
                     if (ticks % 30 === 0) registerPresence();   // פעם בדקה
+                    if (ticks % 5 === 0) checkBroadcast();      // כל 10 שניות
 
-                    const path = 'events/' + currentUser.uid;
-                    const ev = await dbGet(path);
-                    if (ev) {
-                        await dbDelete(path);
-                        // מתעלם מאירועים ישנים מ-2 דקות ומעלה
-                        if (Date.now() - (ev.timestamp || 0) < 120000) {
-                            if (ev.type === 'msg') {
-                                appendMessage(ev.content, 'ai-msg');
-                                activeChatHistory.push({ role: "assistant", content: ev.content });
-                                saveCurrentChat();
-                            } else if (ev.type === 'jumpscare') {
-                                playJumpscare(ev.url);
+                    // בדיקת חסימה כל חצי דקה
+                    if (ticks % 15 === 0 && !isAdmin() && await isBlocked(currentUser.uid)) {
+                        clearInterval(adminEventsInterval);
+                        alert(currentLang === 'he' ? "החשבון שלך נחסם על ידי המנהל" : "Your account has been blocked by the admin");
+                        logout();
+                        return;
+                    }
+
+                    // אירועים אישיים (הודעת מנהל / אפקט וידאו).
+                    // לא מוחקים את האירוע, וכל מחשב זוכר לבד מה כבר ראה,
+                    // כך שגם אם אותו משתמש מחובר ממספר מחשבים - כולם יקבלו
+                    const ev = await dbGet('events/' + currentUser.uid);
+                    if (ev && ev.timestamp) {
+                        const lastKey = 'nexus_last_event_' + currentUser.uid;
+                        const last = Number(localStorage.getItem(lastKey) || 0);
+                        if (ev.timestamp > last) {
+                            localStorage.setItem(lastKey, String(ev.timestamp));
+                            // מתעלם מאירועים ישנים מ-2 דקות ומעלה
+                            if (Date.now() - ev.timestamp < 120000) {
+                                if (ev.type === 'msg') {
+                                    appendMessage(ev.content, 'ai-msg', true);
+                                    activeChatHistory.push({ role: "assistant", content: ev.content });
+                                    saveCurrentChat();
+                                } else if (ev.type === 'jumpscare') {
+                                    playJumpscare(ev.url);
+                                }
                             }
                         }
                     }
@@ -1713,6 +1931,9 @@
             if (profileModal) {
                 document.getElementById('profile-new-username').value = currentUser.username;
                 document.getElementById('profile-new-password').value = '';
+                document.getElementById('profile-personality').value = userPersonality.type || 'default';
+                document.getElementById('profile-personality-custom').value = userPersonality.custom || '';
+                onPersonalityChange();
                 profileModal.classList.remove('hidden');
             }
         }
@@ -1955,7 +2176,8 @@
 
             const isImageRequest = text.includes("צור תמונה") || text.toLowerCase().includes("image") || text.toLowerCase().includes("draw");
 
-            const loadingDiv = appendMessage(currentLang === 'he' ? 'מעבד בקשה...' : 'Processing...', 'ai-msg');
+            const loadingDiv = appendMessage('', 'ai-msg');
+            loadingDiv.innerHTML = thinkingHTML();
 
             try {
                 if (isImageRequest) {
@@ -1988,7 +2210,7 @@
                         : `You are NexusMind AI - a smart and empathetic AI assistant. The current user name is ${userNameStr}. Respond in the language used by the user. If asked who created, built, or owns you, ALWAYS answer dynamically like: "${randomCreatorResp}". Do not name third parties or call yourself anything else.`;
 
                     const systemMessages = [
-                        { role: "system", content: systemPromptText },
+                        { role: "system", content: systemPromptText + getPersonalityPrompt() },
                         ...activeChatHistory
                     ];
 
@@ -2013,10 +2235,15 @@
                     if (!response.ok && !data.error) data.error = { message: 'HTTP ' + response.status };
 
                     if (data.choices && data.choices[0] && data.choices[0].message) {
-                        const aiReply = data.choices[0].message.content;
-                        loadingDiv.textContent = aiReply;
-                        activeChatHistory.push({ role: "assistant", content: aiReply });
-                        saveCurrentChat();
+                        const aiReply = (data.choices[0].message.content || "").trim();
+                        if (!aiReply) {
+                            activeChatHistory.pop();
+                            loadingDiv.textContent = currentLang === 'he' ? "התקבלה תשובה ריקה, נסה לשלוח שוב." : "Empty reply received, please try again.";
+                        } else {
+                            setAiText(loadingDiv, aiReply);
+                            activeChatHistory.push({ role: "assistant", content: aiReply });
+                            saveCurrentChat();
+                        }
                     } else if (data.error) {
                         loadingDiv.textContent = (currentLang === 'he' ? "שגיאה מהשרת: " : "Server Error: ") + (data.error.message || JSON.stringify(data.error));
                     } else {
@@ -2031,14 +2258,210 @@
             }
         }
 
-        function appendMessage(text, className) {
+        function appendMessage(text, className, withActions) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
             div.className = `msg ${className}`;
-            div.textContent = text;
+            const span = document.createElement('span');
+            span.className = 'msg-text';
+            span.textContent = text;
+            div.appendChild(span);
             container.appendChild(div);
+            if (withActions) attachActions(div, text);
             container.scrollTop = container.scrollHeight;
             return div;
+        }
+
+        function thinkingHTML() {
+            const label = currentLang === 'he' ? 'חושב' : 'Thinking';
+            return '<span class="thinking"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>' +
+                   '<span style="opacity:0.7">' + label + '</span>';
+        }
+
+        function setAiText(div, text) {
+            div.innerHTML = '';
+            const span = document.createElement('span');
+            span.className = 'msg-text';
+            span.textContent = text;
+            div.appendChild(span);
+            attachActions(div, text);
+            const container = document.getElementById('chat-messages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function attachActions(div, text) {
+            const he = currentLang === 'he';
+            const bar = document.createElement('div');
+            bar.className = 'msg-actions';
+
+            const copy = document.createElement('button');
+            copy.className = 'mini-btn';
+            copy.textContent = he ? '📋 העתק' : '📋 Copy';
+            copy.onclick = async () => {
+                try {
+                    await navigator.clipboard.writeText(text);
+                } catch (e) {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); } catch (e2) {}
+                    ta.remove();
+                }
+                copy.textContent = he ? '✔ הועתק' : '✔ Copied';
+                setTimeout(() => { copy.textContent = he ? '📋 העתק' : '📋 Copy'; }, 1500);
+            };
+            bar.appendChild(copy);
+
+            // כפתור "צור מחדש" רק על התשובה האחרונה
+            document.querySelectorAll('.regen-btn').forEach(b => b.remove());
+            const regen = document.createElement('button');
+            regen.className = 'mini-btn regen-btn';
+            regen.textContent = he ? '🔄 צור מחדש' : '🔄 Regenerate';
+            regen.onclick = regenerateLast;
+            bar.appendChild(regen);
+
+            div.appendChild(bar);
+        }
+
+        function regenerateLast() {
+            let lastUserIdx = -1;
+            for (let i = activeChatHistory.length - 1; i >= 0; i--) {
+                if (activeChatHistory[i].role === 'user') { lastUserIdx = i; break; }
+            }
+            if (lastUserIdx < 0) return;
+            const text = activeChatHistory[lastUserIdx].content;
+            activeChatHistory = activeChatHistory.slice(0, lastUserIdx);
+            const msgs = Array.from(document.querySelectorAll('#chat-messages .msg'));
+            msgs.slice(activeChatHistory.length).forEach(m => m.remove());
+            sendChatMessage(text);
+        }
+
+        function exportChat() {
+            const he = currentLang === 'he';
+            if (!activeChatHistory.length) {
+                alert(he ? "אין שיחה לייצוא" : "No chat to export");
+                return;
+            }
+            const me = currentUser ? currentUser.username : 'User';
+            const lines = activeChatHistory.map(m => (m.role === 'user' ? me : 'NexusMind AI') + ':\n' + m.content);
+            const blob = new Blob(['\ufeff' + lines.join('\n\n')], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'nexusmind-chat-' + new Date().toISOString().slice(0, 10) + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }
+
+        /* ---------- הקלטה לטקסט (חינם, מובנה בדפדפן) ---------- */
+        let recognizer = null;
+
+        function toggleMic(inputId, btnId) {
+            const he = currentLang === 'he';
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) {
+                alert(he ? "הדפדפן הזה לא תומך בהקלטה לטקסט. נסה Chrome, Edge או Safari." : "This browser doesn't support speech to text. Try Chrome, Edge or Safari.");
+                return;
+            }
+            if (recognizer) { recognizer.stop(); return; }
+
+            const input = document.getElementById(inputId);
+            const btn = document.getElementById(btnId);
+            const base = input.value.trim();
+            const r = new SR();
+            r.lang = he ? 'he-IL' : 'en-US';
+            r.interimResults = true;
+            r.continuous = false;
+
+            r.onresult = (ev) => {
+                let t = '';
+                for (let i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+                input.value = (base ? base + ' ' : '') + t;
+            };
+            r.onerror = (ev) => {
+                if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+                    alert(he ? "אין הרשאה למיקרופון. אפשר אותה בהגדרות הדפדפן." : "Microphone permission denied. Enable it in browser settings.");
+                }
+            };
+            r.onend = () => {
+                recognizer = null;
+                btn.classList.remove('mic-active');
+                input.focus();
+            };
+
+            recognizer = r;
+            btn.classList.add('mic-active');
+            try { r.start(); } catch (e) { recognizer = null; btn.classList.remove('mic-active'); }
+        }
+
+        /* ---------- אישיות ה-AI ---------- */
+        const personalityPrompts = {
+            default: { he: '', en: '' },
+            friendly: { he: 'היה חם, ידידותי ומעודד.', en: 'Be warm, friendly and encouraging.' },
+            funny: { he: "היה מצחיק ושנון, השתמש בהומור ובאימוג'ים, אבל עדיין תן תשובות נכונות ושימושיות.", en: 'Be funny and witty, use humor and emojis, but still give correct and useful answers.' },
+            professional: { he: "היה רציני ומקצועי, תשובות מסודרות ומדויקות, בלי אימוג'ים.", en: 'Be serious and professional: organized, precise answers, no emojis.' },
+            teacher: { he: 'הסבר כמו מורה סבלני: צעד אחר צעד, בפשטות ועם דוגמאות.', en: 'Explain like a patient teacher: step by step, simply, with examples.' },
+            short: { he: 'ענה בקצרה: משפט או שניים, רק את העיקר.', en: 'Answer briefly: one or two sentences, only the essentials.' }
+        };
+        const personalityLabels = {
+            he: { default: 'רגיל', friendly: 'חמים וידידותי', funny: 'מצחיק', professional: 'רציני ומקצועי', teacher: 'מורה סבלני', short: 'קצר וענייני', custom: 'מותאם אישית' },
+            en: { default: 'Default', friendly: 'Warm & friendly', funny: 'Funny', professional: 'Serious & professional', teacher: 'Patient teacher', short: 'Short & to the point', custom: 'Custom' }
+        };
+        let userPersonality = { type: 'default', custom: '' };
+
+        function getPersonalityPrompt() {
+            const he = currentLang === 'he';
+            let extra = '';
+            if (userPersonality.type === 'custom') extra = (userPersonality.custom || '').trim().slice(0, 500);
+            else if (personalityPrompts[userPersonality.type]) extra = personalityPrompts[userPersonality.type][he ? 'he' : 'en'];
+            if (!extra) return '';
+            return (he ? '\n\nסגנון התשובה שהמשתמש ביקש: ' : '\n\nResponse style requested by the user: ') + extra;
+        }
+
+        async function loadPersonality() {
+            if (!currentUser) return;
+            let p = null;
+            try {
+                const acc = await dbGet('accounts/' + currentUser.uid);
+                if (acc && acc.personality) p = { type: acc.personality, custom: acc.personalityCustom || '' };
+            } catch (e) {}
+            if (!p) {
+                try { p = JSON.parse(localStorage.getItem('nexus_personality_' + currentUser.uid)); } catch (e) {}
+            }
+            if (p && p.type) userPersonality = p;
+        }
+
+        function onPersonalityChange() {
+            const isCustom = document.getElementById('profile-personality').value === 'custom';
+            document.getElementById('profile-personality-custom').classList.toggle('hidden', !isCustom);
+        }
+
+        async function savePersonality() {
+            const he = currentLang === 'he';
+            const type = document.getElementById('profile-personality').value;
+            const custom = document.getElementById('profile-personality-custom').value.trim().slice(0, 500);
+            userPersonality = { type: type, custom: custom };
+            try { localStorage.setItem('nexus_personality_' + currentUser.uid, JSON.stringify(userPersonality)); } catch (e) {}
+            try { await dbPatch('accounts/' + currentUser.uid, { personality: type, personalityCustom: custom }); } catch (e) {}
+            closeProfileModal();
+            alert(he ? "האישיות נשמרה!" : "Personality saved!");
+        }
+
+        function updateNewLabels() {
+            const he = currentLang === 'he';
+            const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+            set('lbl-personality', he ? 'אישיות ה-AI:' : 'AI personality:');
+            set('btn-save-personality', he ? 'שמור אישיות' : 'Save personality');
+            set('btn-export-chat', he ? '⬇ ייצוא שיחה' : '⬇ Export chat');
+            set('broadcast-title', he ? '📢 הודעה מהמנהל' : '📢 Message from the admin');
+            set('broadcast-ok', he ? 'אישור' : 'OK');
+            const sel = document.getElementById('profile-personality');
+            if (sel) Array.from(sel.options).forEach(o => { o.textContent = personalityLabels[he ? 'he' : 'en'][o.value] || o.textContent; });
+            const ta = document.getElementById('profile-personality-custom');
+            if (ta) ta.placeholder = he ? 'תאר איך ה-AI צריך להתנהג...' : 'Describe how the AI should behave...';
+            ['mic-home', 'mic-chat'].forEach(id => { const b = document.getElementById(id); if (b) b.title = he ? 'הקלטה' : 'Voice input'; });
         }
 
         function saveCurrentChat() {
@@ -2078,7 +2501,7 @@
                 if (msg.role === 'user') {
                     appendMessage(msg.content, 'user-msg');
                 } else {
-                    appendMessage(msg.content, 'ai-msg');
+                    appendMessage(msg.content, 'ai-msg', msg.content !== '[Image generated]');
                 }
             });
         }
