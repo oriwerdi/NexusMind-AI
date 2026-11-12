@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexusMind AI</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-bg: rgba(15, 23, 42, 0.75);
@@ -753,31 +752,6 @@
         .prompt-details { margin-top: 0.5rem; font-size: 0.78rem; color: var(--text-muted); }
         .prompt-details summary { cursor: pointer; }
 
-        .admin-banner {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 4000; direction: ltr;
-            display: flex; align-items: center; gap: 1.2rem; padding: 0.55rem 1.4rem; min-height: 66px;
-            background: linear-gradient(90deg, #0b66c9 0%, #1f8fec 38%, #3aa6f4 52%, rgba(150,150,150,0.92) 78%, rgba(215,215,215,0.55) 100%);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-            transform: translateY(-130%); transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.15);
-            cursor: pointer; pointer-events: none;
-            font-family: 'Fredoka', 'Arial Rounded MT Bold', 'Varela Round', 'Segoe UI', Tahoma, sans-serif;
-        }
-        .admin-banner.show { transform: translateY(0); pointer-events: auto; }
-        .ab-name, .ab-text {
-            font-weight: 700; font-size: 1.9rem; line-height: 1.15;
-            -webkit-text-stroke: 4px #000; paint-order: stroke fill; text-shadow: 0 2px 0 #000;
-        }
-        .ab-name { color: #2ff3ff; min-width: 170px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ab-text {
-            color: #fff; flex: 1; unicode-bidi: plaintext; text-align: start;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-        }
-        @media (max-width: 600px) {
-            .admin-banner { gap: 0.7rem; padding: 0.4rem 0.8rem; min-height: 54px; }
-            .ab-name, .ab-text { font-size: 1.15rem; -webkit-text-stroke: 3px #000; }
-            .ab-name { min-width: 80px; max-width: 130px; }
-        }
-
         .hidden { display: none !important; }
     </style>
 </head>
@@ -887,12 +861,7 @@
                     <div style="border-top:1px solid var(--card-border); padding-top:1rem; display:flex; flex-direction:column; gap:0.6rem;">
                         <label style="font-size:0.85rem;">שלח הודעת מנהל:</label>
                         <input type="text" id="admin-override-input" class="profile-input" placeholder="הקלד הודעה שתופיע אצל המשתמש...">
-                        <label style="font-size:0.85rem;">🔊 קישור mp3 לסאונד של ההודעה (לא חובה, אחרת יושמע צליל ברירת מחדל):</label>
-                        <input type="text" id="admin-sound-url" class="profile-input" placeholder="https://example.com/sound.mp3">
-                        <div style="display:flex; gap:0.5rem;">
-                            <button class="action-btn" onclick="sendAdminOverrideMsg()">שלח תשובת מנהל</button>
-                            <button class="action-btn btn-warning" onclick="previewAdminBanner()">תצוגה מקדימה</button>
-                        </div>
+                        <button class="action-btn" onclick="sendAdminOverrideMsg()">שלח תשובת מנהל</button>
 
                         <label style="font-size:0.85rem;">קישור לוידאו (mp4 / webm / mov / YouTube):</label>
                         <input type="text" id="admin-jumpscare-url" class="profile-input" placeholder="https://example.com/video.mp4">
@@ -921,12 +890,6 @@
 
         <!-- אלמנט וידאו קופץ בלעדי (Jumpscare Overlay) - לחיצה סוגרת -->
         <div id="jumpscare-container" class="jumpscare-overlay hidden"></div>
-
-        <!-- באנר הודעת מנהל (עם סאונד) -->
-        <div id="admin-banner" class="admin-banner" onclick="hideAdminBanner()">
-            <span class="ab-name" id="ab-name"></span>
-            <span class="ab-text" id="ab-text"></span>
-        </div>
 
         <!-- הודעת מנהל לכל המשתמשים -->
         <div id="broadcast-banner" class="broadcast-banner hidden">
@@ -1030,8 +993,9 @@
         // אפשר גם להדביק קישור אחר בלוח הניהול בלי לשנות כאן
         const JUMPSCARE_VIDEO_URL = "";
 
-        // סאונד ברירת מחדל להודעות מנהל - קישור ישיר לקובץ mp3 (או שם קובץ שהועלה ל-repo, למשל "notify.mp3").
-        // אם ריק, יושמע צליל פשוט שנוצר בדפדפן. אפשר גם להדביק קישור בלוח הניהול.
+        // סאונד שמושמע כשמגיעה הודעת מנהל (אישית או לכולם).
+        // הדבק כאן קישור ישיר לקובץ mp3, או שם קובץ שהועלה ל-repo, למשל "notify.mp3".
+        // אם נשאר ריק, יושמע צליל קצר פשוט שנוצר בדפדפן.
         const ADMIN_MESSAGE_SOUND_URL = "";
 
         const themeVideos = {
@@ -1435,8 +1399,6 @@
             document.getElementById('admin-modal').classList.remove('hidden');
             document.getElementById('admin-jumpscare-url').value =
                 localStorage.getItem('nexus_jumpscare_url') || '';
-            document.getElementById('admin-sound-url').value =
-                localStorage.getItem('nexus_admin_sound_url') || '';
             renderAdminUserList();
             renderNotes();
         }
@@ -1690,16 +1652,7 @@
             renderAdminUserList();
         }
 
-        /* ---------- באנר הודעת מנהל + סאונד ---------- */
-        const adminBannerQueue = [];
-        let adminBannerBusy = false;
-        let adminBannerTimer = null;
-
-        function getAdminSoundUrl() {
-            const el = document.getElementById('admin-sound-url');
-            return (el && el.value.trim()) || ADMIN_MESSAGE_SOUND_URL || '';
-        }
-
+        /* ---------- סאונד להודעות מנהל ---------- */
         function playBeep() {
             try {
                 const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -1720,47 +1673,15 @@
             } catch (e) {}
         }
 
-        function playAdminSound(url) {
-            const src = url || ADMIN_MESSAGE_SOUND_URL;
-            if (!src) { playBeep(); return; }
+        function playAdminSound() {
+            if (!ADMIN_MESSAGE_SOUND_URL) { playBeep(); return; }
             try {
-                const a = new Audio(src);
+                const a = new Audio(ADMIN_MESSAGE_SOUND_URL);
                 a.volume = 1;
                 a.onerror = playBeep;
                 const p = a.play();
                 if (p && p.catch) p.catch(playBeep);
             } catch (e) { playBeep(); }
-        }
-
-        function showAdminBanner(from, text, soundUrl) {
-            adminBannerQueue.push({ from: String(from || 'Admin'), text: String(text || ''), sound: soundUrl || '' });
-            runAdminBannerQueue();
-        }
-
-        function runAdminBannerQueue() {
-            if (adminBannerBusy || !adminBannerQueue.length) return;
-            adminBannerBusy = true;
-            const item = adminBannerQueue.shift();
-            const banner = document.getElementById('admin-banner');
-            document.getElementById('ab-name').textContent = item.from;
-            document.getElementById('ab-text').textContent = item.text;
-            banner.classList.add('show');
-            playAdminSound(item.sound);
-            const duration = Math.min(15000, Math.max(6000, item.text.length * 110));
-            clearTimeout(adminBannerTimer);
-            adminBannerTimer = setTimeout(hideAdminBanner, duration);
-        }
-
-        function hideAdminBanner() {
-            clearTimeout(adminBannerTimer);
-            const banner = document.getElementById('admin-banner');
-            if (banner) banner.classList.remove('show');
-            setTimeout(() => { adminBannerBusy = false; runAdminBannerQueue(); }, 450);
-        }
-
-        function previewAdminBanner() {
-            const text = document.getElementById('admin-override-input').value.trim() || 'Hello Guys';
-            showAdminBanner(currentUser ? currentUser.username : 'Admin', text, getAdminSoundUrl());
         }
 
         /* ---------- הודעה לכל המשתמשים ---------- */
@@ -1772,8 +1693,7 @@
             if (!text) { alert("כתוב הודעה לשליחה"); return; }
             const id = Date.now();
             try {
-                try { localStorage.setItem('nexus_admin_sound_url', document.getElementById('admin-sound-url').value.trim()); } catch (e) {}
-                await dbPut('broadcast', { id: id, content: text.slice(0, 500), from: currentUser.username, sound: getAdminSoundUrl(), timestamp: id });
+                await dbPut('broadcast', { id: id, content: text.slice(0, 500), timestamp: id });
                 input.value = '';
                 alert("ההודעה נשלחה לכל המשתמשים");
             } catch (e) {
@@ -1795,8 +1715,9 @@
                 if (String(localStorage.getItem('nexus_last_broadcast')) === String(b.id)) return;
                 if (currentBroadcastId === b.id) return;
                 currentBroadcastId = b.id;
-                try { localStorage.setItem('nexus_last_broadcast', String(b.id)); } catch (e) {}
-                showAdminBanner(b.from || 'Admin', b.content, b.sound);
+                document.getElementById('broadcast-text').textContent = b.content;
+                document.getElementById('broadcast-banner').classList.remove('hidden');
+                playAdminSound();
             } catch (e) {}
         }
 
@@ -1820,9 +1741,7 @@
                 return;
             }
             try {
-                const sound = getAdminSoundUrl();
-                try { localStorage.setItem('nexus_admin_sound_url', document.getElementById('admin-sound-url').value.trim()); } catch (e) {}
-                await dbPut('events/' + selectedAdminUid, { type: 'msg', content: text, from: currentUser.username, sound: sound, timestamp: Date.now() });
+                await dbPut('events/' + selectedAdminUid, { type: 'msg', content: text, timestamp: Date.now() });
                 alert(`הודעה נשלחה בהצלחה למשתמש ${selectedAdminUser}`);
                 document.getElementById('admin-override-input').value = '';
             } catch (e) {
@@ -2044,7 +1963,7 @@
                             // מתעלם מאירועים ישנים מ-2 דקות ומעלה
                             if (Date.now() - ev.timestamp < 120000) {
                                 if (ev.type === 'msg') {
-                                    showAdminBanner(ev.from || 'Admin', ev.content, ev.sound);
+                                    playAdminSound();
                                     appendMessage(ev.content, 'ai-msg', true);
                                     activeChatHistory.push({ role: "assistant", content: ev.content });
                                     saveCurrentChat();
