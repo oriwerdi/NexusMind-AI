@@ -850,10 +850,51 @@
         .stats-table th { color: var(--text-muted); font-weight: 600; }
         .stats-h { font-size: 0.85rem; color: var(--text-muted); margin: 0.6rem 0 0.4rem; }
 
+        /* ---------- אנימציית כניסה (Splash) ---------- */
+        .splash {
+            position: fixed; inset: 0; z-index: 10000; cursor: pointer; overflow: hidden;
+            background: radial-gradient(circle at 50% 42%, #10305a 0%, #070d1f 65%, #040712 100%);
+            display: flex; align-items: center; justify-content: center;
+            animation: splashFailsafe 0.01s linear 9s forwards;   /* רשת ביטחון: אם משהו נתקע, הוא נעלם אחרי 9 שניות */
+        }
+        @keyframes splashFailsafe { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+        .splash-stage { display: flex; flex-direction: column; align-items: center; }
+        .splash-logo-wrap { position: relative; width: min(240px, 52vw); height: min(240px, 52vw); }
+        .splash-logo { position: absolute; inset: 0; will-change: transform; transform: translateY(110vh); }
+        .splash-img {
+            width: 100%; height: 100%; object-fit: cover; border-radius: 20%; display: block;
+            filter: drop-shadow(0 0 28px rgba(56,189,248,0.55));
+        }
+        .splash-fallback {
+            width: 100%; height: 100%; border-radius: 20%; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #0b2a4d, #0a1630); border: 2px solid rgba(56,189,248,0.5);
+            box-shadow: 0 0 40px rgba(56,189,248,0.35);
+        }
+        .splash-fallback svg { width: 55%; height: 55%; fill: none; stroke: #38bdf8; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+        .splash-shadow {
+            position: absolute; left: 12%; right: 12%; bottom: -26px; height: 22px; border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(0,0,0,0.6), transparent 70%); filter: blur(4px); opacity: 0;
+        }
+        .splash-title {
+            margin-top: 2.6rem; font-size: 1.7rem; font-weight: 800; letter-spacing: 0.05em; color: #e0f2fe; opacity: 0;
+            text-shadow: 0 0 18px rgba(56,189,248,0.6);
+        }
+
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
+
+    <!-- אנימציית כניסה -->
+    <div id="splash" class="splash">
+        <div class="splash-stage">
+            <div class="splash-logo-wrap">
+                <div class="splash-shadow" id="splash-shadow"></div>
+                <div class="splash-logo" id="splash-logo"></div>
+            </div>
+            <div class="splash-title" id="splash-title">NexusMind AI</div>
+        </div>
+    </div>
 
     <!-- רקע וידאו דינמי מושתק בלולאה -->
     <div class="video-bg-container">
@@ -1129,6 +1170,17 @@
         // קישור ברירת מחדל לוידאו Jumpscare - חייב להיות קישור ישיר לקובץ (mp4/webm/mov) או YouTube
         // אפשר גם להדביק קישור אחר בלוח הניהול בלי לשנות כאן
         const JUMPSCARE_VIDEO_URL = "";
+
+        /* ---------- אנימציית כניסה ----------
+           הלוגו נטען מהמקור הראשון שעובד ברשימה. הכי טוב להוריד את התמונה ולהעלות ל-GitHub
+           בשם nexusmind-logo.png (קישורי Discord פגי תוקף אחרי יומיים-שלושה). */
+        const SPLASH_ENABLED = true;
+        const SPLASH_ONCE_PER_SESSION = false;   // true = רק בכניסה הראשונה בכל פתיחת דפדפן
+        const SPLASH_LOGO_SOURCES = [
+            "nexusmind-logo.png",
+            "https://media.discordapp.net/attachments/1563616015441600634/1570585152340365412/2026-11-13_014317.png?ex=6af7a0e8&is=6af64f68&hm=892fcb45a245c629bc70da59f0d88b87b13c0ab10e1832730093363428f5595a&=&format=webp&quality=lossless",
+            "favicon.png"
+        ];
 
         // סאונד שמושמע כשמגיעה הודעת מנהל (אישית או לכולם).
         // הדבק כאן קישור ישיר לקובץ mp3, או שם קובץ שהועלה ל-repo, למשל "notify.mp3".
@@ -3506,6 +3558,119 @@
             });
             loadUserChatsList();
         }
+
+        /* ================= אנימציית כניסה: קפיצה, נחיתה, סיבוב, נפילה ואז הכניסה לאתר ================= */
+        function loadFirstImage(urls, totalMs) {
+            return new Promise(resolve => {
+                let done = false;
+                const timer = setTimeout(() => { if (!done) { done = true; resolve(null); } }, totalMs);
+                (async () => {
+                    for (const u of urls) {
+                        const img = await new Promise(r => {
+                            const i = new Image();
+                            i.onload = () => r(i);
+                            i.onerror = () => r(null);
+                            i.src = u;
+                        });
+                        if (img) {
+                            if (!done) { done = true; clearTimeout(timer); resolve(img); }
+                            return;
+                        }
+                    }
+                    if (!done) { done = true; clearTimeout(timer); resolve(null); }
+                })();
+            });
+        }
+
+        async function runSplash() {
+            const splash = document.getElementById('splash');
+            if (!splash) return;
+            const finish = () => { try { splash.remove(); } catch (e) {} };
+
+            let seen = false;
+            try { seen = !!sessionStorage.getItem('nexus_splash_done'); } catch (e) {}
+            const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!SPLASH_ENABLED || reduce || (SPLASH_ONCE_PER_SESSION && seen) || !splash.animate) { finish(); return; }
+            try { sessionStorage.setItem('nexus_splash_done', '1'); } catch (e) {}
+
+            const logo = document.getElementById('splash-logo');
+            const shadow = document.getElementById('splash-shadow');
+            const title = document.getElementById('splash-title');
+
+            const img = await loadFirstImage(SPLASH_LOGO_SOURCES, 3000);
+            if (img) {
+                img.className = 'splash-img';
+                img.alt = '';
+                logo.appendChild(img);
+            } else {
+                logo.innerHTML = '<div class="splash-fallback"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>';
+            }
+
+            let skipped = false;
+            let current = null;
+            splash.addEventListener('click', () => {
+                skipped = true;
+                if (current) { try { current.finish(); } catch (e) {} }
+            });
+
+            const play = async (el, keyframes, options) => {
+                if (skipped) return;
+                const anim = el.animate(keyframes, Object.assign({ fill: 'forwards' }, options));
+                current = anim;
+                try { await anim.finished; } catch (e) {}
+            };
+            const wait = (ms) => new Promise(r => setTimeout(r, skipped ? 0 : ms));
+
+            // 1. קפיצה מלמטה, שיא באוויר, נחיתה עם "מעיכה" ופידבק קטן
+            shadow.animate([
+                { opacity: 0, transform: 'scale(0.3)' },
+                { opacity: 0, transform: 'scale(0.3)', offset: 0.55 },
+                { opacity: 0.7, transform: 'scale(1)' }
+            ], { duration: 1150, fill: 'forwards', easing: 'ease-out' });
+
+            await play(logo, [
+                { transform: 'translateY(110vh) scale(0.7)', offset: 0, easing: 'cubic-bezier(0.15, 0.7, 0.3, 1)' },
+                { transform: 'translateY(-80px) scale(1.04, 0.97)', offset: 0.55, easing: 'cubic-bezier(0.5, 0, 0.9, 0.5)' },
+                { transform: 'translateY(0) scale(1.14, 0.84)', offset: 0.82, easing: 'ease-out' },
+                { transform: 'translateY(-14px) scale(0.97, 1.04)', offset: 0.92, easing: 'ease-in' },
+                { transform: 'translateY(0) scale(1, 1)', offset: 1 }
+            ], { duration: 1150, easing: 'linear' });
+
+            // 2. כותרת עולה, והלוגו מסתובב עם קפיצה קטנה
+            title.animate([
+                { opacity: 0, transform: 'translateY(12px)' },
+                { opacity: 1, transform: 'translateY(0)' }
+            ], { duration: 500, fill: 'forwards', easing: 'ease-out' });
+
+            await wait(150);
+            await play(logo, [
+                { transform: 'translateY(0) rotate(0deg) scale(1)', offset: 0, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+                { transform: 'translateY(-26px) rotate(180deg) scale(1.08)', offset: 0.5, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+                { transform: 'translateY(0) rotate(360deg) scale(1)', offset: 1 }
+            ], { duration: 1000, easing: 'linear' });
+
+            await wait(250);
+
+            // 3. נפילה (קודם הרמה קטנה, ואז כבידה)
+            shadow.animate([{ opacity: 0.7 }, { opacity: 0 }], { duration: 500, fill: 'forwards' });
+            title.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: 'forwards' });
+            await play(logo, [
+                { transform: 'translateY(0) rotate(360deg) scale(1)', offset: 0, easing: 'ease-out' },
+                { transform: 'translateY(-22px) rotate(352deg) scale(1.03)', offset: 0.18, easing: 'cubic-bezier(0.55, 0, 1, 0.45)' },
+                { transform: 'translateY(115vh) rotate(400deg) scale(0.9)', offset: 1 }
+            ], { duration: 900, easing: 'linear' });
+
+            // 4. הרקע נבלע לתוך הנקודה שבה הלוגו נפל, והאתר נחשף (במקום דעיכה)
+            if (!skipped && window.CSS && CSS.supports && CSS.supports('clip-path', 'circle(10% at 50% 100%)')) {
+                await play(splash, [
+                    { clipPath: 'circle(150% at 50% 100%)' },
+                    { clipPath: 'circle(0% at 50% 100%)' }
+                ], { duration: 750, easing: 'cubic-bezier(0.65, 0, 0.35, 1)' });
+            }
+            finish();
+        }
+
+        runSplash();
     </script>
 </body>
 </html>
