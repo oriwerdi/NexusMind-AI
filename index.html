@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexusMind AI</title>
 
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-bg: rgba(15, 23, 42, 0.75);
@@ -752,6 +753,31 @@
         .prompt-details { margin-top: 0.5rem; font-size: 0.78rem; color: var(--text-muted); }
         .prompt-details summary { cursor: pointer; }
 
+        .admin-banner {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 4000; direction: ltr;
+            display: flex; align-items: center; gap: 1.2rem; padding: 0.55rem 1.4rem; min-height: 66px;
+            background: linear-gradient(90deg, #0b66c9 0%, #1f8fec 38%, #3aa6f4 52%, rgba(150,150,150,0.92) 78%, rgba(215,215,215,0.55) 100%);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+            transform: translateY(-130%); transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+            cursor: pointer; pointer-events: none;
+            font-family: 'Fredoka', 'Arial Rounded MT Bold', 'Varela Round', 'Segoe UI', Tahoma, sans-serif;
+        }
+        .admin-banner.show { transform: translateY(0); pointer-events: auto; }
+        .ab-name, .ab-text {
+            font-weight: 700; font-size: 1.9rem; line-height: 1.15;
+            -webkit-text-stroke: 4px #000; paint-order: stroke fill; text-shadow: 0 2px 0 #000;
+        }
+        .ab-name { color: #2ff3ff; min-width: 170px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ab-text {
+            color: #fff; flex: 1; unicode-bidi: plaintext; text-align: start;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        @media (max-width: 600px) {
+            .admin-banner { gap: 0.7rem; padding: 0.4rem 0.8rem; min-height: 54px; }
+            .ab-name, .ab-text { font-size: 1.15rem; -webkit-text-stroke: 3px #000; }
+            .ab-name { min-width: 80px; max-width: 130px; }
+        }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -861,7 +887,12 @@
                     <div style="border-top:1px solid var(--card-border); padding-top:1rem; display:flex; flex-direction:column; gap:0.6rem;">
                         <label style="font-size:0.85rem;">שלח הודעת מנהל:</label>
                         <input type="text" id="admin-override-input" class="profile-input" placeholder="הקלד הודעה שתופיע אצל המשתמש...">
-                        <button class="action-btn" onclick="sendAdminOverrideMsg()">שלח תשובת מנהל</button>
+                        <label style="font-size:0.85rem;">🔊 קישור mp3 לסאונד של ההודעה (לא חובה, אחרת יושמע צליל ברירת מחדל):</label>
+                        <input type="text" id="admin-sound-url" class="profile-input" placeholder="https://example.com/sound.mp3">
+                        <div style="display:flex; gap:0.5rem;">
+                            <button class="action-btn" onclick="sendAdminOverrideMsg()">שלח תשובת מנהל</button>
+                            <button class="action-btn btn-warning" onclick="previewAdminBanner()">תצוגה מקדימה</button>
+                        </div>
 
                         <label style="font-size:0.85rem;">קישור לוידאו (mp4 / webm / mov / YouTube):</label>
                         <input type="text" id="admin-jumpscare-url" class="profile-input" placeholder="https://example.com/video.mp4">
@@ -890,6 +921,12 @@
 
         <!-- אלמנט וידאו קופץ בלעדי (Jumpscare Overlay) - לחיצה סוגרת -->
         <div id="jumpscare-container" class="jumpscare-overlay hidden"></div>
+
+        <!-- באנר הודעת מנהל (עם סאונד) -->
+        <div id="admin-banner" class="admin-banner" onclick="hideAdminBanner()">
+            <span class="ab-name" id="ab-name"></span>
+            <span class="ab-text" id="ab-text"></span>
+        </div>
 
         <!-- הודעת מנהל לכל המשתמשים -->
         <div id="broadcast-banner" class="broadcast-banner hidden">
@@ -992,6 +1029,10 @@
         // קישור ברירת מחדל לוידאו Jumpscare - חייב להיות קישור ישיר לקובץ (mp4/webm/mov) או YouTube
         // אפשר גם להדביק קישור אחר בלוח הניהול בלי לשנות כאן
         const JUMPSCARE_VIDEO_URL = "";
+
+        // סאונד ברירת מחדל להודעות מנהל - קישור ישיר לקובץ mp3 (או שם קובץ שהועלה ל-repo, למשל "notify.mp3").
+        // אם ריק, יושמע צליל פשוט שנוצר בדפדפן. אפשר גם להדביק קישור בלוח הניהול.
+        const ADMIN_MESSAGE_SOUND_URL = "";
 
         const themeVideos = {
             ocean: "https://www.pexels.com/download/video/32132547/",
@@ -1394,6 +1435,8 @@
             document.getElementById('admin-modal').classList.remove('hidden');
             document.getElementById('admin-jumpscare-url').value =
                 localStorage.getItem('nexus_jumpscare_url') || '';
+            document.getElementById('admin-sound-url').value =
+                localStorage.getItem('nexus_admin_sound_url') || '';
             renderAdminUserList();
             renderNotes();
         }
@@ -1647,6 +1690,79 @@
             renderAdminUserList();
         }
 
+        /* ---------- באנר הודעת מנהל + סאונד ---------- */
+        const adminBannerQueue = [];
+        let adminBannerBusy = false;
+        let adminBannerTimer = null;
+
+        function getAdminSoundUrl() {
+            const el = document.getElementById('admin-sound-url');
+            return (el && el.value.trim()) || ADMIN_MESSAGE_SOUND_URL || '';
+        }
+
+        function playBeep() {
+            try {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                const ctx = new Ctx();
+                [[880, 0], [1175, 0.18]].forEach(([freq, delay]) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + delay + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.35);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + delay);
+                    osc.stop(ctx.currentTime + delay + 0.4);
+                });
+            } catch (e) {}
+        }
+
+        function playAdminSound(url) {
+            const src = url || ADMIN_MESSAGE_SOUND_URL;
+            if (!src) { playBeep(); return; }
+            try {
+                const a = new Audio(src);
+                a.volume = 1;
+                a.onerror = playBeep;
+                const p = a.play();
+                if (p && p.catch) p.catch(playBeep);
+            } catch (e) { playBeep(); }
+        }
+
+        function showAdminBanner(from, text, soundUrl) {
+            adminBannerQueue.push({ from: String(from || 'Admin'), text: String(text || ''), sound: soundUrl || '' });
+            runAdminBannerQueue();
+        }
+
+        function runAdminBannerQueue() {
+            if (adminBannerBusy || !adminBannerQueue.length) return;
+            adminBannerBusy = true;
+            const item = adminBannerQueue.shift();
+            const banner = document.getElementById('admin-banner');
+            document.getElementById('ab-name').textContent = item.from;
+            document.getElementById('ab-text').textContent = item.text;
+            banner.classList.add('show');
+            playAdminSound(item.sound);
+            const duration = Math.min(15000, Math.max(6000, item.text.length * 110));
+            clearTimeout(adminBannerTimer);
+            adminBannerTimer = setTimeout(hideAdminBanner, duration);
+        }
+
+        function hideAdminBanner() {
+            clearTimeout(adminBannerTimer);
+            const banner = document.getElementById('admin-banner');
+            if (banner) banner.classList.remove('show');
+            setTimeout(() => { adminBannerBusy = false; runAdminBannerQueue(); }, 450);
+        }
+
+        function previewAdminBanner() {
+            const text = document.getElementById('admin-override-input').value.trim() || 'Hello Guys';
+            showAdminBanner(currentUser ? currentUser.username : 'Admin', text, getAdminSoundUrl());
+        }
+
         /* ---------- הודעה לכל המשתמשים ---------- */
         let currentBroadcastId = null;
 
@@ -1656,7 +1772,8 @@
             if (!text) { alert("כתוב הודעה לשליחה"); return; }
             const id = Date.now();
             try {
-                await dbPut('broadcast', { id: id, content: text.slice(0, 500), timestamp: id });
+                try { localStorage.setItem('nexus_admin_sound_url', document.getElementById('admin-sound-url').value.trim()); } catch (e) {}
+                await dbPut('broadcast', { id: id, content: text.slice(0, 500), from: currentUser.username, sound: getAdminSoundUrl(), timestamp: id });
                 input.value = '';
                 alert("ההודעה נשלחה לכל המשתמשים");
             } catch (e) {
@@ -1678,8 +1795,8 @@
                 if (String(localStorage.getItem('nexus_last_broadcast')) === String(b.id)) return;
                 if (currentBroadcastId === b.id) return;
                 currentBroadcastId = b.id;
-                document.getElementById('broadcast-text').textContent = b.content;
-                document.getElementById('broadcast-banner').classList.remove('hidden');
+                try { localStorage.setItem('nexus_last_broadcast', String(b.id)); } catch (e) {}
+                showAdminBanner(b.from || 'Admin', b.content, b.sound);
             } catch (e) {}
         }
 
@@ -1703,7 +1820,9 @@
                 return;
             }
             try {
-                await dbPut('events/' + selectedAdminUid, { type: 'msg', content: text, timestamp: Date.now() });
+                const sound = getAdminSoundUrl();
+                try { localStorage.setItem('nexus_admin_sound_url', document.getElementById('admin-sound-url').value.trim()); } catch (e) {}
+                await dbPut('events/' + selectedAdminUid, { type: 'msg', content: text, from: currentUser.username, sound: sound, timestamp: Date.now() });
                 alert(`הודעה נשלחה בהצלחה למשתמש ${selectedAdminUser}`);
                 document.getElementById('admin-override-input').value = '';
             } catch (e) {
@@ -1925,6 +2044,7 @@
                             // מתעלם מאירועים ישנים מ-2 דקות ומעלה
                             if (Date.now() - ev.timestamp < 120000) {
                                 if (ev.type === 'msg') {
+                                    showAdminBanner(ev.from || 'Admin', ev.content, ev.sound);
                                     appendMessage(ev.content, 'ai-msg', true);
                                     activeChatHistory.push({ role: "assistant", content: ev.content });
                                     saveCurrentChat();
@@ -2667,7 +2787,7 @@
         }
 
         /* ---------- הקלטה לטקסט (חינם, מובנה בדפדפן) ---------- */
-        let recognizer = null;
+        let micSession = null;
 
         function toggleMic(inputId, btnId) {
             const he = currentLang === 'he';
@@ -2676,35 +2796,75 @@
                 alert(he ? "הדפדפן הזה לא תומך בהקלטה לטקסט. נסה Chrome, Edge או Safari." : "This browser doesn't support speech to text. Try Chrome, Edge or Safari.");
                 return;
             }
-            if (recognizer) { recognizer.stop(); return; }
+            if (micSession) { stopMic(); return; }
 
+            const SILENCE_MS = 3000;   // עוצר רק אחרי 3 שניות בלי שום קול
             const input = document.getElementById(inputId);
             const btn = document.getElementById(btnId);
-            const base = input.value.trim();
-            const r = new SR();
-            r.lang = he ? 'he-IL' : 'en-US';
-            r.interimResults = true;
-            r.continuous = false;
-
-            r.onresult = (ev) => {
-                let t = '';
-                for (let i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
-                input.value = (base ? base + ' ' : '') + t;
+            const s = {
+                stopped: false, input: input, btn: btn, rec: null, timer: null,
+                committed: input.value.trim(), lastActivity: Date.now(), startedAt: 0, quickEnds: 0
             };
-            r.onerror = (ev) => {
-                if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
-                    alert(he ? "אין הרשאה למיקרופון. אפשר אותה בהגדרות הדפדפן." : "Microphone permission denied. Enable it in browser settings.");
-                }
-            };
-            r.onend = () => {
-                recognizer = null;
-                btn.classList.remove('mic-active');
-                input.focus();
-            };
-
-            recognizer = r;
+            micSession = s;
             btn.classList.add('mic-active');
-            try { r.start(); } catch (e) { recognizer = null; btn.classList.remove('mic-active'); }
+
+            const startRec = () => {
+                const r = new SR();
+                r.lang = he ? 'he-IL' : 'en-US';
+                r.interimResults = true;
+                r.continuous = true;
+
+                r.onresult = (ev) => {
+                    s.lastActivity = Date.now();
+                    let t = '';
+                    for (let i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+                    s.input.value = (s.committed ? s.committed + ' ' : '') + t.trim();
+                };
+                r.onspeechstart = () => { s.lastActivity = Date.now(); };
+                r.onsoundstart = () => { s.lastActivity = Date.now(); };
+                r.onerror = (ev) => {
+                    if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+                        alert(he ? "אין הרשאה למיקרופון. אפשר אותה בהגדרות הדפדפן." : "Microphone permission denied. Enable it in browser settings.");
+                        stopMic();
+                    } else if (ev.error === 'audio-capture' || ev.error === 'network') {
+                        alert(he ? "לא ניתן להקליט כרגע (מיקרופון או רשת)." : "Can't record right now (microphone or network).");
+                        stopMic();
+                    }
+                    // no-speech / aborted: הדפדפן סוגר את הסשן, ואנחנו מפעילים אותו מחדש ב-onend
+                };
+                r.onend = () => {
+                    if (s.stopped) return;
+                    // הדפדפן סגר את הסשן מעצמו (קורה אחרי שתיקה קצרה) - ממשיכים להקשיב
+                    s.committed = s.input.value.trim();
+                    if (Date.now() - s.startedAt < 600) {
+                        s.quickEnds++;
+                        if (s.quickEnds >= 4) { stopMic(); return; }
+                    } else {
+                        s.quickEnds = 0;
+                    }
+                    startRec();
+                };
+
+                s.rec = r;
+                s.startedAt = Date.now();
+                try { r.start(); } catch (e) { stopMic(); }
+            };
+
+            s.timer = setInterval(() => {
+                if (Date.now() - s.lastActivity > SILENCE_MS) stopMic();
+            }, 300);
+            startRec();
+        }
+
+        function stopMic() {
+            const s = micSession;
+            if (!s) return;
+            micSession = null;
+            s.stopped = true;
+            clearInterval(s.timer);
+            try { s.rec.stop(); } catch (e) {}   // התוצאה האחרונה עדיין תגיע ותוצג
+            s.btn.classList.remove('mic-active');
+            s.input.focus();
         }
 
         /* ---------- אישיות ה-AI ---------- */
