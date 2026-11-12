@@ -729,6 +729,29 @@
         .admin-row-btns { display: flex; gap: 0.3rem; align-items: center; }
         .blocked-badge { color: #ef4444; font-size: 0.75rem; margin-inline-start: 0.4rem; }
 
+        .style-picker { display: flex; flex-direction: column; gap: 0.7rem; min-width: 260px; }
+        .picker-title { font-weight: bold; }
+        .picker-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: -0.3rem; }
+        .picker-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .style-chip {
+            background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: var(--text-main);
+            padding: 0.35rem 0.8rem; border-radius: 1.2rem; font-size: 0.82rem; cursor: pointer; transition: 0.2s;
+        }
+        .style-chip:hover { border-color: var(--accent); }
+        .style-chip.selected { background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: bold; }
+        .picker-input {
+            width: 100%; padding: 0.55rem 0.8rem; border-radius: 0.6rem; border: 1px solid var(--card-border);
+            background: rgba(15,23,42,0.5); color: var(--text-main); font-size: 0.9rem; outline: none;
+        }
+        .picker-input:focus { border-color: var(--accent); }
+        .picker-go {
+            background: var(--accent); color: #0f172a; border: none; border-radius: 0.7rem;
+            padding: 0.6rem; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+        }
+        .picker-go:hover { background: var(--accent-hover); color: white; }
+        .prompt-details { margin-top: 0.5rem; font-size: 0.78rem; color: var(--text-muted); }
+        .prompt-details summary { cursor: pointer; }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -2174,30 +2197,16 @@
             activeChatHistory.push({ role: "user", content: text });
             appendMessage(text, 'user-msg');
 
-            const isImageRequest = text.includes("צור תמונה") || text.toLowerCase().includes("image") || text.toLowerCase().includes("draw");
+            const isImageRequest = /צור תמונה|צור לי תמונה|תמונה של|תצייר|צייר|ציור של|generate (an? )?image|create (an? )?image|image of|\bdraw\b/i.test(text);
 
             const loadingDiv = appendMessage('', 'ai-msg');
             loadingDiv.innerHTML = thinkingHTML();
 
             try {
                 if (isImageRequest) {
-                    // OpenRouter לא תומך ביצירת תמונות בנקודת /images/generations, לכן משתמשים ב-Pollinations
-                    const randomSeed = Math.floor(Math.random() * 1000000);
-                    const cleanPrompt = text.replace(/צור תמונה של|תמונה של|image of/gi, '').trim();
-                    const encodedPrompt = encodeURIComponent(cleanPrompt || text);
-                    const imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${randomSeed}&nologo=true`;
-
-                    loadingDiv.innerHTML = `
-                        ${currentLang === 'he' ? 'הנה התמונה שיצרתי עבורך:' : 'Here is your generated image:'}<br>
-                        <img src="${imgUrl}" alt="Generated Image" crossorigin="anonymous">
-                        <br>
-                        <a href="${imgUrl}" target="_blank" download="nexusmind-image.png" class="download-btn">
-                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                            ${currentLang === 'he' ? 'הורד תמונה' : 'Download Image'}
-                        </a>
-                    `;
-                    activeChatHistory.push({ role: "assistant", content: "[Image generated]" });
-                    saveCurrentChat();
+                    // לא מייצרים מיד: קודם שואלים באיזה סגנון, גודל ופרטים
+                    const subject = text.replace(/צור לי תמונה של|צור תמונה של|צור לי תמונה|צור תמונה|תמונה של|ציור של|תצייר לי|תצייר|צייר לי|צייר|image of|generate an image of|create an image of|draw/gi, '').trim();
+                    showImageStylePicker(loadingDiv, subject);
                 } else {
                     const randomCreatorResp = currentLang === 'he'
                         ? creatorResponsesHe[Math.floor(Math.random() * creatorResponsesHe.length)]
@@ -2258,6 +2267,273 @@
             }
         }
 
+        /* ================= יצירת תמונות (Pollinations + FLUX) ================= */
+        const imageStyles = {
+            realistic: {
+                he: 'ריאליסטי (צילום אמיתי)', en: 'Realistic (real photo)',
+                desc: 'an ultra-realistic professional photograph, shot on a full-frame DSLR with an 85mm lens, natural lighting, sharp focus, realistic textures and skin or fur detail, shallow depth of field',
+                tag: 'photorealistic, ultra detailed, 8k, high dynamic range',
+                neg: 'cartoon, illustration, painting, drawing, anime, 3d render, cgi, plastic, blurry, low quality, deformed, watermark, text'
+            },
+            anime: {
+                he: 'אנימה', en: 'Anime',
+                desc: 'anime style illustration, clean line art, cel shading, vibrant colors, detailed background, studio quality',
+                tag: 'anime, highly detailed, vibrant',
+                neg: 'photo, realistic, blurry, low quality, deformed, watermark, text'
+            },
+            painted: {
+                he: 'מצויר', en: 'Painted',
+                desc: 'a detailed digital painting with visible brushwork, rich colors and dramatic lighting, artstation quality',
+                tag: 'digital painting, highly detailed',
+                neg: 'photo, blurry, low quality, deformed, watermark, text'
+            },
+            cartoon: {
+                he: 'קרטון', en: 'Cartoon',
+                desc: 'a fun 2D cartoon illustration with bold outlines, bright flat colors and playful expressive shapes',
+                tag: 'cartoon, bold outlines, bright colors',
+                neg: 'photo, realistic, blurry, low quality, deformed, watermark, text'
+            },
+            render3d: {
+                he: 'תלת-ממד', en: '3D render',
+                desc: 'a stylized 3D animated-film look render, soft global illumination, smooth materials, cute and polished',
+                tag: '3d render, octane, highly detailed',
+                neg: 'photo, flat, blurry, low quality, deformed, watermark, text'
+            },
+            watercolor: {
+                he: 'צבעי מים', en: 'Watercolor',
+                desc: 'a delicate watercolor painting with soft washes of color, paper texture and gentle gradients',
+                tag: 'watercolor painting, soft colors',
+                neg: 'photo, 3d, blurry, low quality, deformed, watermark, text'
+            },
+            oil: {
+                he: 'ציור שמן', en: 'Oil painting',
+                desc: 'a classic oil painting on canvas with thick brush strokes, rich texture and museum quality',
+                tag: 'oil painting, canvas texture, masterpiece',
+                neg: 'photo, 3d, blurry, low quality, deformed, watermark, text'
+            },
+            pixel: {
+                he: 'פיקסל ארט', en: 'Pixel art',
+                desc: 'retro pixel art, 16-bit video game style, limited color palette, crisp pixels',
+                tag: 'pixel art, 16-bit',
+                neg: 'photo, smooth, blurry, low quality, watermark, text'
+            },
+            fantasy: {
+                he: 'פנטזיה / קונספט ארט', en: 'Fantasy concept art',
+                desc: 'epic fantasy concept art, cinematic composition, dramatic lighting, magical atmosphere, highly detailed',
+                tag: 'concept art, cinematic, epic',
+                neg: 'photo, blurry, low quality, deformed, watermark, text'
+            },
+            sketch: {
+                he: 'סקיצה בעיפרון', en: 'Pencil sketch',
+                desc: 'a detailed graphite pencil sketch on paper, fine hatching and shading, black and white',
+                tag: 'pencil sketch, graphite, detailed',
+                neg: 'color, photo, 3d, blurry, low quality, watermark, text'
+            }
+        };
+
+        const imageSizes = {
+            square: { w: 1024, h: 1024, he: 'ריבוע', en: 'Square' },
+            wide:   { w: 1344, h: 768,  he: 'לרוחב', en: 'Wide' },
+            tall:   { w: 768,  h: 1344, he: 'לאורך', en: 'Tall' }
+        };
+
+        function mk(tag, cls, text) {
+            const el = document.createElement(tag);
+            if (cls) el.className = cls;
+            if (text) el.textContent = text;
+            return el;
+        }
+
+        function showImageStylePicker(div, subject, prev) {
+            const he = currentLang === 'he';
+            let style = (prev && prev.style) || 'realistic';
+            let size = (prev && prev.size) || 'square';
+
+            div.innerHTML = '';
+            const wrap = mk('div', 'style-picker');
+            wrap.appendChild(mk('div', 'picker-title', he ? '🎨 איך לצייר את התמונה?' : '🎨 How should I draw it?'));
+
+            wrap.appendChild(mk('div', 'picker-label', he ? 'מה בתמונה:' : 'What is in the picture:'));
+            const subjectInput = mk('input', 'picker-input');
+            subjectInput.type = 'text';
+            subjectInput.value = subject || '';
+            subjectInput.placeholder = he ? 'למשל: חתול שחור על גג בלילה' : 'e.g. a black cat on a rooftop at night';
+            wrap.appendChild(subjectInput);
+
+            wrap.appendChild(mk('div', 'picker-label', he ? 'סגנון:' : 'Style:'));
+            const styleRow = mk('div', 'picker-row');
+            Object.keys(imageStyles).forEach(key => {
+                const b = mk('button', 'style-chip' + (key === style ? ' selected' : ''), imageStyles[key][he ? 'he' : 'en']);
+                b.onclick = () => {
+                    style = key;
+                    styleRow.querySelectorAll('.style-chip').forEach(x => x.classList.remove('selected'));
+                    b.classList.add('selected');
+                };
+                styleRow.appendChild(b);
+            });
+            wrap.appendChild(styleRow);
+
+            wrap.appendChild(mk('div', 'picker-label', he ? 'גודל:' : 'Size:'));
+            const sizeRow = mk('div', 'picker-row');
+            Object.keys(imageSizes).forEach(key => {
+                const b = mk('button', 'style-chip' + (key === size ? ' selected' : ''), imageSizes[key][he ? 'he' : 'en']);
+                b.onclick = () => {
+                    size = key;
+                    sizeRow.querySelectorAll('.style-chip').forEach(x => x.classList.remove('selected'));
+                    b.classList.add('selected');
+                };
+                sizeRow.appendChild(b);
+            });
+            wrap.appendChild(sizeRow);
+
+            wrap.appendChild(mk('div', 'picker-label', he ? 'פרטים נוספים (לא חובה):' : 'More details (optional):'));
+            const detailsInput = mk('input', 'picker-input');
+            detailsInput.type = 'text';
+            detailsInput.value = (prev && prev.details) || '';
+            detailsInput.placeholder = he ? 'צבעים, מצב רוח, רקע, זווית צילום, מה לא לכלול...' : 'colors, mood, background, camera angle...';
+            wrap.appendChild(detailsInput);
+
+            const go = mk('button', 'picker-go', he ? '✨ צור תמונה' : '✨ Generate image');
+            go.onclick = () => {
+                const subj = subjectInput.value.trim();
+                if (!subj) {
+                    alert(he ? "כתוב מה לצייר" : "Write what to draw");
+                    return;
+                }
+                generateImage(div, { subject: subj, details: detailsInput.value.trim(), style: style, size: size });
+            };
+            wrap.appendChild(go);
+
+            div.appendChild(wrap);
+            const container = document.getElementById('chat-messages');
+            if (container) container.scrollTop = container.scrollHeight;
+        }
+
+        // ממיר את הבקשה (גם בעברית) לפרומפט מפורט באנגלית. FLUX מבין אנגלית הרבה יותר טוב,
+        // וכל פעם נבחרת קומפוזיציה אחרת, כדי שלא יצאו תמונות כמעט זהות.
+        async function buildImagePrompt(opts, st) {
+            const fallback = opts.subject + (opts.details ? ', ' + opts.details : '') + ', ' + st.desc + ', ' + st.tag;
+            try {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 25000);
+                const sys = "You write prompts for the FLUX image generation model. Turn the user's request (it may be in Hebrew) into ONE detailed English image prompt of 50-90 words. " +
+                    "Describe the subject, its pose or action, the composition and camera angle, the lighting, the colors, the mood and the background. " +
+                    "The image must clearly be in this style: " + st.desc + ". " +
+                    "Always pick a fresh, specific and different composition and setting, and never repeat a generic one. " +
+                    "Follow any extra details the user gives. Output ONLY the prompt text, with no quotes and no explanations.";
+                const userMsg = "Request: " + opts.subject + "\nExtra details: " + (opts.details || "none") + "\nVariation id: " + Math.random().toString(36).slice(2, 8);
+                const response = await fetch(API_BASE_URL + '/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + API_KEY,
+                        'HTTP-Referer': location.origin,
+                        'X-Title': 'NexusMind AI'
+                    },
+                    body: JSON.stringify({
+                        model: CHAT_MODEL,
+                        messages: [{ role: "system", content: sys }, { role: "user", content: userMsg }]
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timer);
+                const data = await response.json();
+                let p = data.choices && data.choices[0] && data.choices[0].message && (data.choices[0].message.content || '').trim();
+                if (!p) return fallback;
+                p = p.replace(/^["'\s]+|["'\s]+$/g, '').replace(/\s*\n+\s*/g, ' ').slice(0, 900);
+                return p + ', ' + st.tag;
+            } catch (e) {
+                return fallback;
+            }
+        }
+
+        function loadImageUrl(url, timeoutMs) {
+            return new Promise(resolve => {
+                const img = new Image();
+                const timer = setTimeout(() => resolve(null), timeoutMs);
+                img.onload = () => { clearTimeout(timer); resolve(img); };
+                img.onerror = () => { clearTimeout(timer); resolve(null); };
+                img.src = url;
+            });
+        }
+
+        async function downloadImage(url) {
+            try {
+                const r = await fetch(url);
+                const blob = await r.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'nexusmind-image.png';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+            } catch (e) {
+                window.open(url, '_blank');
+            }
+        }
+
+        async function generateImage(div, opts) {
+            const he = currentLang === 'he';
+            const st = imageStyles[opts.style];
+            const sz = imageSizes[opts.size];
+
+            div.innerHTML = thinkingHTML(he ? 'מצייר... (יכול לקחת עד חצי דקה)' : 'Drawing... (can take up to 30s)');
+            const container = document.getElementById('chat-messages');
+            if (container) container.scrollTop = container.scrollHeight;
+
+            const prompt = await buildImagePrompt(opts, st);
+
+            let img = null, imgUrl = '';
+            for (const model of ['flux', 'turbo']) {
+                const seed = Math.floor(Math.random() * 1000000);
+                imgUrl = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) +
+                    '?model=' + model + '&width=' + sz.w + '&height=' + sz.h + '&seed=' + seed +
+                    '&nologo=true&enhance=false&negative_prompt=' + encodeURIComponent(st.neg);
+                img = await loadImageUrl(imgUrl, 90000);
+                if (img) break;
+            }
+
+            div.innerHTML = '';
+            if (!img) {
+                div.appendChild(mk('div', '', he ? 'לא הצלחתי ליצור את התמונה כרגע. נסה שוב בעוד רגע.' : "Couldn't generate the image right now. Try again in a moment."));
+                const bar = mk('div', 'msg-actions');
+                const retry = mk('button', 'mini-btn', he ? '🔄 נסה שוב' : '🔄 Retry');
+                retry.onclick = () => generateImage(div, opts);
+                const change = mk('button', 'mini-btn', he ? '🎨 שנה הגדרות' : '🎨 Change settings');
+                change.onclick = () => showImageStylePicker(div, opts.subject, opts);
+                bar.append(retry, change);
+                div.appendChild(bar);
+                return;
+            }
+
+            div.appendChild(mk('div', '', (he ? 'הנה התמונה שיצרתי (' : 'Here is your image (') + st[he ? 'he' : 'en'] + '):'));
+            img.alt = 'Generated Image';
+            div.appendChild(img);
+
+            const bar = mk('div', 'msg-actions');
+            const dl = mk('button', 'mini-btn', he ? '⬇ הורד' : '⬇ Download');
+            dl.onclick = () => downloadImage(img.src);
+            const again = mk('button', 'mini-btn', he ? '🔄 צור שוב' : '🔄 Again');
+            again.onclick = () => generateImage(div, opts);
+            const change = mk('button', 'mini-btn', he ? '🎨 שנה סגנון' : '🎨 Change style');
+            change.onclick = () => showImageStylePicker(div, opts.subject, opts);
+            bar.append(dl, again, change);
+            div.appendChild(bar);
+
+            const details = mk('details', 'prompt-details');
+            details.appendChild(mk('summary', '', he ? 'הפרומפט שנשלח' : 'Prompt used'));
+            details.appendChild(mk('div', '', prompt));
+            div.appendChild(details);
+
+            if (!div.dataset.logged) {
+                div.dataset.logged = '1';
+                activeChatHistory.push({ role: "assistant", content: "[Image generated]" });
+                saveCurrentChat();
+            }
+            if (container) container.scrollTop = container.scrollHeight;
+        }
+
         function appendMessage(text, className, withActions) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
@@ -2272,8 +2548,8 @@
             return div;
         }
 
-        function thinkingHTML() {
-            const label = currentLang === 'he' ? 'חושב' : 'Thinking';
+        function thinkingHTML(customLabel) {
+            const label = customLabel || (currentLang === 'he' ? 'חושב' : 'Thinking');
             return '<span class="thinking"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>' +
                    '<span style="opacity:0.7">' + label + '</span>';
         }
