@@ -2267,7 +2267,7 @@
             }
         }
 
-        /* ================= יצירת תמונות (Pollinations + FLUX) ================= */
+        /* ================= יצירת תמונות (Cloudflare Workers AI: FLUX + SDXL) ================= */
         const imageStyles = {
             realistic: {
                 he: 'ריאליסטי (צילום אמיתי)', en: 'Realistic (real photo)',
@@ -2337,6 +2337,8 @@
             tall:   { w: 768,  h: 1344, he: 'לאורך', en: 'Tall' }
         };
 
+        let lastImageTime = 0;
+
         function mk(tag, cls, text) {
             const el = document.createElement(tag);
             if (cls) el.className = cls;
@@ -2385,6 +2387,7 @@
                 sizeRow.appendChild(b);
             });
             wrap.appendChild(sizeRow);
+            wrap.appendChild(mk('div', 'picker-label', he ? 'ריבוע = איכות הכי גבוהה (FLUX). לרוחב/לאורך = מודל SDXL, איכות קצת נמוכה יותר.' : 'Square = best quality (FLUX). Wide/Tall use SDXL, slightly lower quality.'));
 
             wrap.appendChild(mk('div', 'picker-label', he ? 'פרטים נוספים (לא חובה):' : 'More details (optional):'));
             const detailsInput = mk('input', 'picker-input');
@@ -2447,6 +2450,27 @@
             }
         }
 
+        async function requestImage(prompt, st, sz, model) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 90000);
+            try {
+                const response = await fetch(API_BASE_URL + '/images', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt, negative_prompt: st.neg, width: sz.w, height: sz.h, model: model }),
+                    signal: controller.signal
+                });
+                const raw = await response.text();
+                let data;
+                try { data = JSON.parse(raw); }
+                catch (e) { throw new Error('HTTP ' + response.status + ': ' + raw.slice(0, 150)); }
+                if (!response.ok || !data.image) throw new Error((data.error && data.error.message) || ('HTTP ' + response.status));
+                return data.image;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
         function loadImageUrl(url, timeoutMs) {
             return new Promise(resolve => {
                 const img = new Image();
@@ -2478,25 +2502,36 @@
             const st = imageStyles[opts.style];
             const sz = imageSizes[opts.size];
 
+            if (Date.now() - lastImageTime < 8000) {
+                alert(he ? "חכה כמה שניות בין תמונה לתמונה" : "Please wait a few seconds between images");
+                return;
+            }
+            lastImageTime = Date.now();
+
             div.innerHTML = thinkingHTML(he ? 'מצייר... (יכול לקחת עד חצי דקה)' : 'Drawing... (can take up to 30s)');
             const container = document.getElementById('chat-messages');
             if (container) container.scrollTop = container.scrollHeight;
 
             const prompt = await buildImagePrompt(opts, st);
 
-            let img = null, imgUrl = '';
-            for (const model of ['flux', 'turbo']) {
-                const seed = Math.floor(Math.random() * 1000000);
-                imgUrl = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) +
-                    '?model=' + model + '&width=' + sz.w + '&height=' + sz.h + '&seed=' + seed +
-                    '&nologo=true&enhance=false&negative_prompt=' + encodeURIComponent(st.neg);
-                img = await loadImageUrl(imgUrl, 90000);
-                if (img) break;
+            let img = null, lastError = '';
+            // ריבוע: FLUX (הכי טוב), ואם נכשל - SDXL. גדלים אחרים: SDXL
+            const order = opts.size === 'square' ? ['flux', 'sdxl'] : ['sdxl'];
+            for (const model of order) {
+                try {
+                    const dataUrl = await requestImage(prompt, st, sz, model);
+                    img = await loadImageUrl(dataUrl, 30000);
+                    if (img) break;
+                    lastError = he ? 'התמונה שהתקבלה לא נטענה' : 'The received image failed to load';
+                } catch (e) {
+                    lastError = e && e.message ? e.message : String(e);
+                }
             }
 
             div.innerHTML = '';
             if (!img) {
-                div.appendChild(mk('div', '', he ? 'לא הצלחתי ליצור את התמונה כרגע. נסה שוב בעוד רגע.' : "Couldn't generate the image right now. Try again in a moment."));
+                div.appendChild(mk('div', '', he ? 'לא הצלחתי ליצור את התמונה כרגע.' : "Couldn't generate the image right now."));
+                if (lastError) div.appendChild(mk('div', 'prompt-details', lastError));
                 const bar = mk('div', 'msg-actions');
                 const retry = mk('button', 'mini-btn', he ? '🔄 נסה שוב' : '🔄 Retry');
                 retry.onclick = () => generateImage(div, opts);
