@@ -891,6 +891,61 @@
         }
         .bg-hint { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin: -0.4rem 0 0.7rem; line-height: 1.5; }
 
+        /* ---------- הודעות בסגנון Gemini ---------- */
+        :root { --ai-avatar: url('favicon.png'); --user-bubble: rgba(255, 255, 255, 0.12); }
+        body.theme-light { --user-bubble: rgba(15, 23, 42, 0.08); }
+
+        .chat-messages { gap: 1.4rem; }
+
+        /* הודעת משתמש: בועה אפורה ועגולה, בלי צבע בולט */
+        .msg.user-msg, [dir="ltr"] .msg.user-msg {
+            background: var(--user-bubble); color: var(--text-main); font-weight: 400;
+            border-radius: 1.5rem; padding: 0.75rem 1.2rem; max-width: 80%;
+        }
+
+        /* הודעת AI: בלי בועה, עם לוגו האתר בצד */
+        .msg.ai-msg, [dir="ltr"] .msg.ai-msg {
+            position: relative; align-self: stretch; max-width: 100%;
+            background: transparent; border: none; border-radius: 0;
+            padding: 0.2rem 0 0.2rem 0; padding-inline-start: 48px;
+            font-size: 1rem; line-height: 1.75;
+        }
+        .ai-msg::before {
+            content: ''; position: absolute; top: 0.2rem; inset-inline-start: 0; width: 34px; height: 34px;
+            border-radius: 9px; background: var(--ai-avatar) center / contain no-repeat;
+        }
+        .ai-msg:has(.thinking)::before { animation: avatarPulse 1.4s ease-in-out infinite; }
+        @keyframes avatarPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.88); opacity: 0.6; } }
+
+        .ai-msg .msg-actions { gap: 0.1rem; margin-top: 0.5rem; }
+        .ai-msg .msg-actions .mini-btn {
+            background: transparent; border: none; color: var(--text-muted); font-size: 1rem;
+            padding: 0.25rem 0.55rem; border-radius: 0.6rem;
+        }
+        .ai-msg .msg-actions .mini-btn:hover { background: rgba(255,255,255,0.1); color: var(--accent); }
+        .ai-msg .style-picker { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; padding: 0.9rem; max-width: 520px; }
+
+        /* עיצוב טקסט (Markdown) */
+        .msg-rich { white-space: normal; }
+        .msg-rich p { margin: 0 0 0.8rem; }
+        .msg-rich > :last-child { margin-bottom: 0; }
+        .msg-rich ol, .msg-rich ul { margin: 0 0 0.8rem; padding-inline-start: 1.7rem; }
+        .msg-rich li { margin-bottom: 0.4rem; padding-inline-start: 0.2rem; }
+        .msg-rich li > p { margin: 0; }
+        .md-h { margin: 1rem 0 0.4rem; font-weight: 700; line-height: 1.4; }
+        h3.md-h { font-size: 1.2rem; } h4.md-h { font-size: 1.1rem; } h5.md-h { font-size: 1rem; }
+        .msg-rich hr { border: none; border-top: 1px solid var(--card-border); margin: 1rem 0; }
+        .msg-rich a { color: var(--accent); }
+        .msg-rich code.md-inline {
+            background: rgba(127,127,127,0.22); padding: 0.1rem 0.4rem; border-radius: 0.4rem;
+            font-family: Consolas, 'Courier New', monospace; font-size: 0.88em; direction: ltr; unicode-bidi: isolate;
+        }
+        .code-block { margin: 0.7rem 0; border-radius: 0.9rem; overflow: hidden; background: #0f172a; border: 1px solid rgba(255,255,255,0.12); direction: ltr; text-align: left; }
+        .code-head { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0.5rem 0.35rem 0.9rem; font-size: 0.75rem; color: #94a3b8; background: rgba(255,255,255,0.06); }
+        .code-copy { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.78rem; padding: 0.2rem 0.5rem; border-radius: 0.4rem; }
+        .code-copy:hover { background: rgba(255,255,255,0.12); color: #38bdf8; }
+        .code-block pre { margin: 0; padding: 0.8rem 1rem; overflow-x: auto; font-size: 0.86rem; line-height: 1.55; font-family: Consolas, 'Courier New', monospace; color: #e2e8f0; white-space: pre; }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -2929,13 +2984,178 @@
             if (container) container.scrollTop = container.scrollHeight;
         }
 
+        /* ================= עיצוב טקסט של ה-AI (Markdown בטוח, בלי innerHTML) ================= */
+        function appendInline(parent, text) {
+            const re = /(\*\*[^*\n]+\*\*|`[^`\n]+`|\*[^*\s][^*\n]*\*|\[[^\]\n]+\]\(https?:\/\/[^\s)]+\))/g;
+            let last = 0, m;
+            while ((m = re.exec(text)) !== null) {
+                if (m.index > last) parent.appendChild(document.createTextNode(text.slice(last, m.index)));
+                const tok = m[0];
+                if (tok.startsWith('**')) {
+                    const el = document.createElement('strong');
+                    appendInline(el, tok.slice(2, -2));
+                    parent.appendChild(el);
+                } else if (tok.startsWith('`')) {
+                    const el = document.createElement('code');
+                    el.className = 'md-inline';
+                    el.textContent = tok.slice(1, -1);
+                    parent.appendChild(el);
+                } else if (tok.startsWith('[')) {
+                    const mm = tok.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
+                    const el = document.createElement('a');
+                    el.textContent = mm[1];
+                    el.href = mm[2];
+                    el.target = '_blank';
+                    el.rel = 'noopener noreferrer';
+                    parent.appendChild(el);
+                } else {
+                    const el = document.createElement('em');
+                    el.textContent = tok.slice(1, -1);
+                    parent.appendChild(el);
+                }
+                last = m.index + tok.length;
+            }
+            if (last < text.length) parent.appendChild(document.createTextNode(text.slice(last)));
+        }
+
+        function makeCodeBlock(code, lang) {
+            const he = currentLang === 'he';
+            const wrap = document.createElement('div');
+            wrap.className = 'code-block';
+            const head = document.createElement('div');
+            head.className = 'code-head';
+            const label = document.createElement('span');
+            label.textContent = lang || 'code';
+            const btn = document.createElement('button');
+            btn.className = 'code-copy';
+            btn.textContent = he ? '📋 העתק' : '📋 Copy';
+            btn.onclick = async () => {
+                try { await navigator.clipboard.writeText(code); } catch (e) {
+                    const ta = document.createElement('textarea');
+                    ta.value = code;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); } catch (e2) {}
+                    ta.remove();
+                }
+                btn.textContent = he ? '✔ הועתק' : '✔ Copied';
+                setTimeout(() => { btn.textContent = he ? '📋 העתק' : '📋 Copy'; }, 1500);
+            };
+            head.append(label, btn);
+            const pre = document.createElement('pre');
+            const c = document.createElement('code');
+            c.textContent = code;
+            pre.appendChild(c);
+            wrap.append(head, pre);
+            return wrap;
+        }
+
+        function renderRich(el, text) {
+            el.textContent = '';
+            const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+            let i = 0;
+            let para = [];
+
+            const flushPara = () => {
+                if (!para.length) return;
+                const p = document.createElement('p');
+                p.setAttribute('dir', 'auto');
+                para.forEach((ln, idx) => {
+                    if (idx) p.appendChild(document.createElement('br'));
+                    appendInline(p, ln);
+                });
+                el.appendChild(p);
+                para = [];
+            };
+            const bulletRe = /^\s*[-*•]\s+(.*)$/;
+            const orderedRe = /^\s*(\d+)[.)]\s+(.*)$/;
+
+            while (i < lines.length) {
+                const line = lines[i];
+
+                const fence = line.match(/^\s*```\s*([\w+#-]*)\s*$/);
+                if (fence) {
+                    flushPara();
+                    const buf = [];
+                    i++;
+                    while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) { buf.push(lines[i]); i++; }
+                    i++;
+                    el.appendChild(makeCodeBlock(buf.join('\n'), fence[1]));
+                    continue;
+                }
+
+                const h = line.match(/^(#{1,4})\s+(.*)$/);
+                if (h) {
+                    flushPara();
+                    const hd = document.createElement('h' + Math.min(h[1].length + 2, 5));
+                    hd.className = 'md-h';
+                    hd.setAttribute('dir', 'auto');
+                    appendInline(hd, h[2]);
+                    el.appendChild(hd);
+                    i++;
+                    continue;
+                }
+
+                if (/^\s*(---+|\*\*\*+)\s*$/.test(line)) {
+                    flushPara();
+                    el.appendChild(document.createElement('hr'));
+                    i++;
+                    continue;
+                }
+
+                const isBullet = bulletRe.test(line) && !/^\s*\*\*/.test(line);
+                const isOrdered = orderedRe.test(line);
+                if (isBullet || isOrdered) {
+                    flushPara();
+                    const list = document.createElement(isOrdered ? 'ol' : 'ul');
+                    list.setAttribute('dir', 'auto');
+                    if (isOrdered) list.start = Number(line.match(orderedRe)[1]) || 1;
+                    const itemRe = isOrdered ? orderedRe : bulletRe;
+                    while (i < lines.length) {
+                        const mm = lines[i].match(itemRe);
+                        if (mm && !(itemRe === bulletRe && /^\s*\*\*/.test(lines[i]))) {
+                            const li = document.createElement('li');
+                            li.setAttribute('dir', 'auto');
+                            appendInline(li, isOrdered ? mm[2] : mm[1]);
+                            list.appendChild(li);
+                            i++;
+                            continue;
+                        }
+                        // שורת המשך (מוזחת) של הפריט האחרון
+                        if (/^\s{2,}\S/.test(lines[i]) && list.lastChild) {
+                            list.lastChild.appendChild(document.createElement('br'));
+                            appendInline(list.lastChild, lines[i].trim());
+                            i++;
+                            continue;
+                        }
+                        // שורה ריקה: ממשיכים את הרשימה רק אם הפריט הבא הוא מאותו סוג
+                        if (/^\s*$/.test(lines[i])) {
+                            let j = i;
+                            while (j < lines.length && /^\s*$/.test(lines[j])) j++;
+                            if (j < lines.length && itemRe.test(lines[j])) { i = j; continue; }
+                        }
+                        break;
+                    }
+                    el.appendChild(list);
+                    continue;
+                }
+
+                if (/^\s*$/.test(line)) { flushPara(); i++; continue; }
+
+                para.push(line);
+                i++;
+            }
+            flushPara();
+        }
+
         function appendMessage(text, className, withActions) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
             div.className = `msg ${className}`;
-            const span = document.createElement('span');
-            span.className = 'msg-text';
-            span.textContent = text;
+            const isAi = className === 'ai-msg';
+            const span = document.createElement(isAi ? 'div' : 'span');
+            span.className = 'msg-text' + (isAi ? ' msg-rich' : '');
+            if (isAi && text) renderRich(span, text); else span.textContent = text;
             div.appendChild(span);
             container.appendChild(div);
             if (withActions) attachActions(div, text);
@@ -2951,9 +3171,9 @@
 
         function setAiText(div, text) {
             div.innerHTML = '';
-            const span = document.createElement('span');
-            span.className = 'msg-text';
-            span.textContent = text;
+            const span = document.createElement('div');
+            span.className = 'msg-text msg-rich';
+            renderRich(span, text);
             div.appendChild(span);
             attachActions(div, text);
             const container = document.getElementById('chat-messages');
@@ -2967,7 +3187,8 @@
 
             const copy = document.createElement('button');
             copy.className = 'mini-btn';
-            copy.textContent = he ? '📋 העתק' : '📋 Copy';
+            copy.textContent = '📋';
+            copy.title = he ? 'העתק' : 'Copy';
             copy.onclick = async () => {
                 try {
                     await navigator.clipboard.writeText(text);
@@ -2979,8 +3200,8 @@
                     try { document.execCommand('copy'); } catch (e2) {}
                     ta.remove();
                 }
-                copy.textContent = he ? '✔ הועתק' : '✔ Copied';
-                setTimeout(() => { copy.textContent = he ? '📋 העתק' : '📋 Copy'; }, 1500);
+                copy.textContent = '✔';
+                setTimeout(() => { copy.textContent = '📋'; }, 1500);
             };
             bar.appendChild(copy);
 
@@ -2988,7 +3209,8 @@
             document.querySelectorAll('.regen-btn').forEach(b => b.remove());
             const regen = document.createElement('button');
             regen.className = 'mini-btn regen-btn';
-            regen.textContent = he ? '🔄 צור מחדש' : '🔄 Regenerate';
+            regen.textContent = '🔄';
+            regen.title = he ? 'צור תשובה מחדש' : 'Regenerate';
             regen.onclick = regenerateLast;
             bar.appendChild(regen);
 
@@ -3472,11 +3694,11 @@
                     scheduled = false;
                     if (!textSpan) {
                         div.innerHTML = '';
-                        textSpan = document.createElement('span');
-                        textSpan.className = 'msg-text';
+                        textSpan = document.createElement('div');
+                        textSpan.className = 'msg-text msg-rich';
                         div.appendChild(textSpan);
                     }
-                    textSpan.textContent = content;
+                    renderRich(textSpan, content);
                     container.scrollTop = container.scrollHeight;
                 });
             };
