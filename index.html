@@ -3115,6 +3115,9 @@
             if (!/^https?:\/\//i.test(url)) {
                 if (/^[\w-]+(\.[\w-]+)+(\/|$)/i.test(url)) url = 'https://' + url; else return null;
             }
+            // קישור לדף של Vlipsy (אותו מנגנון כמו ב-jumpscare) -> הקובץ הישיר שלו
+            url = resolveVideoUrl(url);
+
             let u;
             try { u = new URL(url); } catch (e) { return null; }
             const host = u.hostname.replace(/^www\./, '').toLowerCase();
@@ -3132,6 +3135,18 @@
             if (host === 'vimeo.com' || host === 'player.vimeo.com') {
                 const m = u.pathname.match(/(\d{6,})/);
                 if (m) return { type: 'vimeo', id: m[1] };
+            }
+
+            // Giphy: קישור לדף -> קובץ mp4 ישיר
+            if (host === 'giphy.com') {
+                const m = u.pathname.match(/\/(?:gifs|embed|clips|stickers)\/(?:[\w-]*-)?([A-Za-z0-9]{8,})\/?$/);
+                if (m) return { type: 'video', url: 'https://media.giphy.com/media/' + m[1] + '/giphy.mp4', knownVideo: true };
+            }
+
+            // Imgur gifv -> mp4
+            if (host.endsWith('imgur.com') && /\.gifv$/i.test(u.pathname)) {
+                u.pathname = u.pathname.replace(/\.gifv$/i, '.mp4');
+                return { type: 'video', url: u.toString(), knownVideo: true };
             }
 
             // Dropbox: מעבר לקישור ישיר
