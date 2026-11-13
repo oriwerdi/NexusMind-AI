@@ -882,6 +882,15 @@
             text-shadow: 0 0 18px rgba(56,189,248,0.6);
         }
 
+        /* ---------- רקע מותאם אישית ---------- */
+        .custom-bg { position: absolute; inset: 0; overflow: hidden; transition: opacity 0.6s ease; }
+        .custom-bg-media { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .custom-bg-iframe {
+            position: absolute; top: 50%; left: 50%; border: 0; pointer-events: none;
+            width: max(100vw, 177.78vh); height: max(100vh, 56.25vw); transform: translate(-50%, -50%);
+        }
+        .bg-hint { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin: -0.4rem 0 0.7rem; line-height: 1.5; }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -903,6 +912,7 @@
         <video id="bg-video" class="bg-video" autoplay loop muted playsinline>
             <source id="bg-video-src" src="https://assets.mixkit.co/videos/preview/mixkit-abstract-fast-line-motion-animation-43187-large.mp4" type="video/mp4">
         </video>
+        <div id="custom-bg" class="custom-bg hidden"></div>
     </div>
 
     <!-- סרגל צד -->
@@ -985,6 +995,20 @@
                 </select>
                 <textarea id="profile-personality-custom" class="profile-input hidden" rows="3" maxlength="500" placeholder="תאר איך ה-AI צריך להתנהג..."></textarea>
                 <button class="action-btn" onclick="savePersonality()" id="btn-save-personality">שמור אישיות</button>
+
+                <hr style="border-color: var(--card-border); margin: 0.75rem 0;">
+
+                <div style="text-align: right; margin-bottom: 0.3rem;" dir="auto">
+                    <label style="font-size: 0.8rem; color: var(--text-muted);" id="lbl-custom-bg">רקע מותאם אישית:</label>
+                </div>
+                <input type="text" id="profile-custom-bg" class="profile-input" placeholder="קישור לסרטון (mp4 / YouTube / Vimeo) או לתמונה" style="direction:ltr; text-align:left;">
+                <div class="bg-hint" id="custom-bg-hint">אפשר להדביק קישור ישיר לקובץ וידאו, קישור YouTube או Vimeo, או תמונה / GIF.</div>
+                <div style="text-align: right; margin-bottom: 0.2rem;" dir="auto">
+                    <label style="font-size: 0.8rem; color: var(--text-muted);"><span id="lbl-bg-opacity">בהירות הרקע:</span> <span id="bg-opacity-val">55%</span></label>
+                </div>
+                <input type="range" id="profile-bg-opacity" min="15" max="100" value="55" oninput="onBgOpacityInput()" style="width:100%; margin-bottom:0.8rem; accent-color: var(--accent);">
+                <button class="action-btn" onclick="saveCustomBg()" id="btn-save-bg">החל רקע</button>
+                <button class="action-btn btn-warning" onclick="resetCustomBg()" id="btn-reset-bg">חזור לרקע הרגיל</button>
 
                 <hr style="border-color: var(--card-border); margin: 0.75rem 0;">
 
@@ -1204,6 +1228,7 @@
         let selectedAdminUid = null;
         let adminEventsInterval = null;
         let jumpscareTimer = null;
+        let customBg = { url: '', opacity: 55 };
 
         const translations = {
             he: {
@@ -1376,7 +1401,8 @@
             if (videoElem && themeVideos[themeName]) {
                 videoElem.src = themeVideos[themeName];
                 videoElem.load();
-                videoElem.play().catch(e => console.log("Autoplay check:", e));
+                if (customBg.url) { try { videoElem.pause(); } catch (e) {} }
+                else videoElem.play().catch(e => console.log("Autoplay check:", e));
             }
 
             localStorage.setItem('copilot_theme', themeName);
@@ -1580,6 +1606,7 @@
             checkAdminEvents();
             updateUI();
             loadPersonality();
+            loadCustomBg();
             loadUsage();
             updateSidebarUser();
             fetchChats().then(loadUserChatsList).catch(() => {});
@@ -2208,6 +2235,9 @@
                 document.getElementById('profile-personality').value = userPersonality.type || 'default';
                 document.getElementById('profile-personality-custom').value = userPersonality.custom || '';
                 onPersonalityChange();
+                document.getElementById('profile-custom-bg').value = customBg.url || '';
+                document.getElementById('profile-bg-opacity').value = customBg.opacity || 55;
+                document.getElementById('bg-opacity-val').textContent = (customBg.opacity || 55) + '%';
                 profileModal.classList.remove('hidden');
             }
         }
@@ -3078,6 +3108,169 @@
             s.input.focus();
         }
 
+        /* ---------- רקע מותאם אישית (כל משתמש לעצמו) ---------- */
+        function parseBackgroundUrl(raw) {
+            let url = String(raw || '').trim();
+            if (!url) return null;
+            if (!/^https?:\/\//i.test(url)) {
+                if (/^[\w-]+(\.[\w-]+)+(\/|$)/i.test(url)) url = 'https://' + url; else return null;
+            }
+            let u;
+            try { u = new URL(url); } catch (e) { return null; }
+            const host = u.hostname.replace(/^www\./, '').toLowerCase();
+
+            // YouTube (כולל shorts, youtu.be ו-live)
+            let yt = null;
+            if (host === 'youtu.be') yt = u.pathname.slice(1).split('/')[0];
+            else if (host.endsWith('youtube.com') || host === 'youtube-nocookie.com') {
+                if (u.pathname === '/watch') yt = u.searchParams.get('v');
+                else { const m = u.pathname.match(/^\/(?:embed|shorts|live|v)\/([\w-]{11})/); if (m) yt = m[1]; }
+            }
+            if (yt && /^[\w-]{11}$/.test(yt)) return { type: 'youtube', id: yt };
+
+            // Vimeo
+            if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+                const m = u.pathname.match(/(\d{6,})/);
+                if (m) return { type: 'vimeo', id: m[1] };
+            }
+
+            // Dropbox: מעבר לקישור ישיר
+            if (host.endsWith('dropbox.com')) { u.searchParams.delete('dl'); u.searchParams.set('raw', '1'); url = u.toString(); }
+
+            const path = u.pathname.toLowerCase();
+            if (/\.(png|jpe?g|gif|webp|avif|bmp|svg)$/.test(path)) return { type: 'image', url: url };
+            const knownVideo = /\.(mp4|webm|ogv|ogg|mov|m4v)$/.test(path);
+            return { type: 'video', url: url, knownVideo: knownVideo };
+        }
+
+        function restoreThemeBackground() {
+            const holder = document.getElementById('custom-bg');
+            if (holder) { holder.innerHTML = ''; holder.classList.add('hidden'); }
+            const themeVid = document.getElementById('bg-video');
+            if (themeVid) {
+                themeVid.style.display = '';
+                themeVid.play().catch(() => {});
+            }
+        }
+
+        function applyCustomBg(rawUrl, opacityPct, silent) {
+            const he = currentLang === 'he';
+            const holder = document.getElementById('custom-bg');
+            const themeVid = document.getElementById('bg-video');
+            if (!holder) return false;
+            holder.innerHTML = '';
+
+            const parsed = parseBackgroundUrl(rawUrl);
+            if (!parsed) { restoreThemeBackground(); return false; }
+
+            holder.classList.remove('hidden');
+            holder.style.opacity = String((Number(opacityPct) || 55) / 100);
+            if (themeVid) { themeVid.style.display = 'none'; try { themeVid.pause(); } catch (e) {} }
+
+            const fail = () => {
+                customBg = { url: '', opacity: customBg.opacity };
+                restoreThemeBackground();
+                if (!silent) alert(he ? "לא הצלחתי לטעון את הקישור כרקע. כדאי להשתמש בקישור ישיר לקובץ וידאו/תמונה, או בקישור YouTube." : "Couldn't load that link as a background. Use a direct video/image link or a YouTube link.");
+            };
+
+            const addImage = () => {
+                holder.innerHTML = '';
+                const img = document.createElement('img');
+                img.className = 'custom-bg-media';
+                img.alt = '';
+                img.onerror = fail;
+                img.src = parsed.url;
+                holder.appendChild(img);
+            };
+
+            if (parsed.type === 'youtube') {
+                const f = document.createElement('iframe');
+                f.className = 'custom-bg-iframe';
+                f.allow = 'autoplay; encrypted-media';
+                f.setAttribute('tabindex', '-1');
+                f.src = 'https://www.youtube-nocookie.com/embed/' + parsed.id +
+                    '?autoplay=1&mute=1&controls=0&loop=1&playlist=' + parsed.id +
+                    '&modestbranding=1&rel=0&playsinline=1&disablekb=1&iv_load_policy=3';
+                holder.appendChild(f);
+            } else if (parsed.type === 'vimeo') {
+                const f = document.createElement('iframe');
+                f.className = 'custom-bg-iframe';
+                f.allow = 'autoplay; fullscreen';
+                f.setAttribute('tabindex', '-1');
+                f.src = 'https://player.vimeo.com/video/' + parsed.id + '?background=1&autoplay=1&loop=1&muted=1';
+                holder.appendChild(f);
+            } else if (parsed.type === 'image') {
+                addImage();
+            } else {
+                const v = document.createElement('video');
+                v.className = 'custom-bg-media';
+                v.autoplay = true;
+                v.loop = true;
+                v.muted = true;
+                v.playsInline = true;
+                v.setAttribute('playsinline', '');
+                v.onerror = () => { if (parsed.knownVideo) fail(); else { v.onerror = null; addImage(); } };
+                v.src = parsed.url;
+                holder.appendChild(v);
+                const p = v.play();
+                if (p && p.catch) p.catch(() => {});
+            }
+            return true;
+        }
+
+        function onBgOpacityInput() {
+            const val = Number(document.getElementById('profile-bg-opacity').value);
+            document.getElementById('bg-opacity-val').textContent = val + '%';
+            const holder = document.getElementById('custom-bg');
+            if (holder && customBg.url) holder.style.opacity = String(val / 100);
+        }
+
+        async function persistCustomBg() {
+            if (!currentUser) return;
+            try { localStorage.setItem('nexus_custom_bg_' + currentUser.uid, JSON.stringify(customBg)); } catch (e) {}
+            try { await dbPatch('accounts/' + currentUser.uid, { customBg: customBg.url, customBgOpacity: customBg.opacity }); } catch (e) {}
+        }
+
+        async function saveCustomBg() {
+            const he = currentLang === 'he';
+            const raw = document.getElementById('profile-custom-bg').value.trim().slice(0, 600);
+            const opacity = Number(document.getElementById('profile-bg-opacity').value) || 55;
+            if (!raw) { alert(he ? "הדבק קישור לרקע" : "Paste a link for the background"); return; }
+            if (!parseBackgroundUrl(raw)) { alert(he ? "הקישור לא נראה תקין" : "That link doesn't look valid"); return; }
+            customBg = { url: raw, opacity: opacity };
+            if (!applyCustomBg(raw, opacity, false)) return;
+            await persistCustomBg();
+            closeProfileModal();
+        }
+
+        async function resetCustomBg() {
+            customBg = { url: '', opacity: 55 };
+            restoreThemeBackground();
+            document.getElementById('profile-custom-bg').value = '';
+            document.getElementById('profile-bg-opacity').value = 55;
+            document.getElementById('bg-opacity-val').textContent = '55%';
+            await persistCustomBg();
+        }
+
+        async function loadCustomBg() {
+            if (!currentUser) return;
+            let url = '', opacity = 55;
+            try {
+                const acc = await dbGet('accounts/' + currentUser.uid);
+                if (acc && acc.customBg) { url = acc.customBg; opacity = Number(acc.customBgOpacity) || 55; }
+            } catch (e) {}
+            if (!url) {
+                try {
+                    const l = JSON.parse(localStorage.getItem('nexus_custom_bg_' + currentUser.uid));
+                    if (l && l.url) { url = l.url; opacity = Number(l.opacity) || 55; }
+                } catch (e) {}
+            }
+            if (url) {
+                customBg = { url: url, opacity: opacity };
+                applyCustomBg(url, opacity, true);
+            }
+        }
+
         /* ---------- אישיות ה-AI ---------- */
         const personalityPrompts = {
             default: { he: '', en: '' },
@@ -3134,6 +3327,13 @@
         function updateNewLabels() {
             const he = currentLang === 'he';
             const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+            set('lbl-custom-bg', he ? 'רקע מותאם אישית:' : 'Custom background:');
+            set('lbl-bg-opacity', he ? 'בהירות הרקע:' : 'Background brightness:');
+            set('btn-save-bg', he ? 'החל רקע' : 'Apply background');
+            set('btn-reset-bg', he ? 'חזור לרקע הרגיל' : 'Back to the default background');
+            set('custom-bg-hint', he ? 'אפשר להדביק קישור ישיר לקובץ וידאו, קישור YouTube או Vimeo, או תמונה / GIF.' : 'Paste a direct video file link, a YouTube or Vimeo link, or an image / GIF.');
+            const bgIn = document.getElementById('profile-custom-bg');
+            if (bgIn) bgIn.placeholder = he ? 'קישור לסרטון (mp4 / YouTube / Vimeo) או לתמונה' : 'Video link (mp4 / YouTube / Vimeo) or image';
             set('lbl-gallery', he ? 'הגלריה שלי' : 'My gallery');
             set('lbl-stats', he ? 'סטטיסטיקות ומחוברים' : 'Stats & online');
             set('gallery-title', he ? '🖼 הגלריה שלי' : '🖼 My gallery');
